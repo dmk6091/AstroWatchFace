@@ -16,6 +16,10 @@ android {
         versionName '1.' + (System.getenv('GITHUB_RUN_NUMBER') ?: 'local')
     }
 
+    buildFeatures {
+        buildConfig false
+    }
+
     // Fixed key so every build updates the previous one in place.
     signingConfigs {
         release {
@@ -28,7 +32,9 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled false
+            // No code in a watch face: R8 strips the generated classes so no dex is shipped.
+            // Resources must all stay (they're referenced by name from watchface.xml).
+            minifyEnabled true
             shrinkResources false
             signingConfig signingConfigs.release
         }
