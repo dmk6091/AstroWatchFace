@@ -57,10 +57,10 @@ GREEN = '#7CC24A'
 PURPLE = '#9A86F2'
 ORANGE = '#F2B33D'
 WHITE = '#E9ECF1'
-GREY = '#AAB1BC'
-DIM = '#6B7280'
+GREY = '#C3C9D2'
+DIM = '#8A919C'
 PANEL = (15, 18, 23)
-EDGE = (40, 45, 53)
+EDGE = (64, 70, 80)
 GUTTER = (4, 5, 7)
 
 
@@ -92,7 +92,7 @@ def line(points, fill, width=1):
 
 
 # disc
-d.ellipse((0, 0, S - 1, S - 1), fill=(11, 13, 17, 255))
+d.ellipse((0, 0, S - 1, S - 1), fill=(17, 20, 25, 255))
 # subtle radial vignette
 vig = Image.new('L', (S, S), 0)
 vd = ImageDraw.Draw(vig)
@@ -135,12 +135,12 @@ d = ImageDraw.Draw(bg)
 time_poly = [(410, 343), (845, 343), (868, 366), (868, 552), (845, 575), (410, 575), (387, 552), (387, 366)]
 tide_poly = [(400, 585), (855, 585), (880, 612), (880, 840), (855, 866), (400, 866), (375, 840), (375, 612)]
 sun_poly = [(410, 875), (845, 875), (905, 960), (905, 1110), (350, 1110), (350, 960)]
-poly(time_poly, fill=(14, 17, 22, 255))
-poly(tide_poly, fill=(13, 18, 26, 255))
+poly(time_poly, fill=(23, 27, 34, 255))
+poly(tide_poly, fill=(19, 27, 39, 255))
 sunmask = Image.new('L', (S, S), 0)
 ImageDraw.Draw(sunmask).polygon([P(*p) for p in sun_poly], fill=255)
 sunmask = ImageChops.multiply(sunmask, circle)
-bg.paste(Image.new('RGBA', (S, S), (13, 15, 19, 255)), (0, 0), sunmask)
+bg.paste(Image.new('RGBA', (S, S), (21, 24, 30, 255)), (0, 0), sunmask)
 d = ImageDraw.Draw(bg)
 
 # gutters between panels (dark line with a faint lighter edge)
@@ -235,8 +235,8 @@ label('DEEP SKY', 975, 724, 10.5, PURPLE, spacing=0.4)
 label('BARO', 900, 623, 9.5, GREY, anchor='lm')
 label('MAX', 897, 543, 9.5, GREEN, anchor='lm')
 label('MIN', 897, 571, 9.5, GREEN, anchor='lm')
-label('TIDE', 590, 600, 11, TIDE, anchor='rm', spacing=0.5)
-bg_draw.ellipse([*P(624, 597), *P(630, 603)], fill=hexrgb('#9AA3AE'))
+label('TIDE', 612, 600, 11, TIDE, anchor='rm', spacing=0.5)
+bg_draw.ellipse([*P(622, 596), *P(630, 604)], fill=hexrgb('#9AA3AE'))
 label('SUN', 610, 892, 10.5, ORANGE, anchor='lm', spacing=0.5)
 label('Azimuth', 474, 928, 9.5, GREY)
 label('Day Length', 761, 928, 9.5, GREY)
@@ -337,6 +337,28 @@ def arrow_img(color='#6FA0F0'):
     return im
 
 
+def steps_img():
+    n = 200
+    im = icon_canvas(n)
+    dd = ImageDraw.Draw(im)
+    c = hexrgb('#C9CED6')
+    for (ox, oy) in ((30, 20), (105, 70)):
+        dd.ellipse((ox, oy, ox + 55, oy + 85), fill=c)
+        dd.ellipse((ox + 8, oy + 92, ox + 47, oy + 125), fill=c)
+    return im
+
+
+def heart_img():
+    n = 200
+    im = icon_canvas(n)
+    dd = ImageDraw.Draw(im)
+    c = hexrgb('#E5484D')
+    dd.ellipse((20, 30, 105, 115), fill=c)
+    dd.ellipse((95, 30, 180, 115), fill=c)
+    dd.polygon([(24, 92), (176, 92), (100, 180)], fill=c)
+    return im
+
+
 def mountain_img():
     n = 240
     im = icon_canvas(n)
@@ -399,8 +421,8 @@ paste_icon(moonset_img(), 401, 284, 32)
 paste_icon(sun_img(ORANGE, half=True), 497, 546, 38)
 paste_icon(sun_img('#F28B3D', half=True), 672, 546, 38)
 paste_icon(drop_img(), 209, 563, 26)
-paste_icon(wind_img(), 206, 613, 30)
-paste_icon(arrow_img(), 206, 653, 26)
+paste_icon(steps_img(), 206, 613, 30)
+paste_icon(heart_img(), 206, 653, 26)
 paste_icon(mountain_img(), 931, 379, 62)
 paste_icon(satellite_img(), 318, 774, 62)
 paste_icon(galaxy_img(), 905, 852, 120)
@@ -556,19 +578,21 @@ def q(s):
     return quoteattr(s)
 
 
-def text_el(x, y, w, h, template, params, font, size, color, align='CENTER', name=None):
+def text_el(x, y, w, h, template, params, font, size, color, align='CENTER', name=None, launch=None):
     ps = ''.join('<Parameter expression=%s/>' % q(p) for p in params)
-    return ('<PartText x="%.1f" y="%.1f" width="%.1f" height="%.1f"%s>'
+    return ('<PartText x="%.1f" y="%.1f" width="%.1f" height="%.1f"%s>%s'
             '<Text align="%s"><Font family="%s" size="%.1f" color="%s">'
             '<Template><![CDATA[%s]]>%s</Template></Font></Text></PartText>') % (
-        x, y, w, h, (' name=%s' % q(name)) if name else '', align, font, size, color, template, ps)
+        x, y, w, h, (' name=%s' % q(name)) if name else '',
+        ('<Launch target="%s"/>' % launch) if launch else '', align, font, size, color, template, ps)
 
 
 PREVIEW = []
 SAMPLES = {}  # expression -> sample text for the preview image
 
 
-def T(rx, ry, template, params=(), size=12, color=WHITE, font='barlow_sc_semibold', align='CENTER', width=None):
+def T(rx, ry, template, params=(), size=12, color=WHITE, font='barlow_sc_semibold', align='CENTER', width=None,
+      launch=None):
     """Text centred vertically on ref (rx, ry); for START/END, rx is the left/right edge."""
     if not params:
         params, template = ['"%s"' % template], '%s'
@@ -594,7 +618,7 @@ def T(rx, ry, template, params=(), size=12, color=WHITE, font='barlow_sc_semibol
         x = fx
     else:
         x = fx - w
-    return text_el(x, fy - h / 2, w, h, template, params, font, size, color, align)
+    return text_el(x, fy - h / 2, w, h, template, params, font, size, color, align, launch=launch)
 
 
 PH = '--'
@@ -638,6 +662,7 @@ for i in range(27):
     cond.append('<Compare expression="m%d">%s</Compare>' % (i, moon_img_el(i)))
 cond.append('<Default>%s</Default></Condition></Group>' % moon_img_el(27))
 parts.append(''.join(cond))
+AMB_MOON = ''.join(cond).replace('<Group name="moon"', '<Group name="moon2"')
 parts.append(T(425, 241, '%s', ['"--:--"'], size=14, color=WHITE, align='START', width=60))
 parts.append(T(425, 284, '%s', ['"--:--"'], size=14, color=WHITE, align='START', width=60))
 parts.append(T(800, 231, '%s', [ILLUM], size=15, color='#6FA8F5', align='END', width=50))
@@ -645,8 +670,8 @@ parts.append(T(802, 231, '%s', ['"%"'], size=15, color='#6FA8F5', align='START',
 parts.append(T(784, 262, '%s', [by_type(PH1)], size=11.5, color='#C9CED6'))
 parts.append(T(784, 298, '%s', [by_type(PH2)], size=11.5, color='#C9CED6'))
 # date
-parts.append(T(536, 371, '%s', [DOW], size=17, color='#5FA2F5', font='barlow_semibold'))
-parts.append(T(690, 371, '%s %s', ['[DAY]', MON], size=17, color='#E9ECF1', font='barlow_medium'))
+parts.append(T(536, 371, '%s', [DOW], size=17, color='#5FA2F5', font='barlow_semibold', launch='CALENDAR'))
+parts.append(T(690, 371, '%s %s', ['[DAY]', MON], size=17, color='#E9ECF1', font='barlow_medium', launch='CALENDAR'))
 # sunrise / sunset (companion app)
 parts.append(T(527, 546, '%s', ['"--:--"'], size=13.5, color=WHITE, align='START', width=60))
 parts.append(T(702, 546, '%s', ['"--:--"'], size=13.5, color=WHITE, align='START', width=60))
@@ -667,10 +692,15 @@ def wx_text(fam):
 parts.append(wx_icon % (mx(286) - isz / 2, my(394) - isz / 2, isz, isz, wx_text('wx_day'), wx_text('wx_night')))
 parts.append(T(293, 452, '%s°', ['%s ? round([WEATHER.TEMPERATURE]) : "--"' % WXAVAIL], size=25, color=WHITE,
                font='barlow_medium'))
-parts.append(T(284, 510, 'Feels %s', ['"--°"'], size=12.5, color=GREY))
-parts.append(T(240, 563, '%s', ['"--%"'], size=17, color=WHITE, align='START', width=70))
-parts.append(T(237, 613, '%s', ['"-- km/h"'], size=15, color=WHITE, align='START', width=80))
-parts.append(T(237, 653, '%s', ['"--"'], size=15, color=WHITE, align='START', width=60))
+HI = '[WEATHER.IS_AVAILABLE] ? round([WEATHER.DAY_TEMPERATURE_HIGH]) : "--"'
+LO = '[WEATHER.IS_AVAILABLE] ? round([WEATHER.DAY_TEMPERATURE_LOW]) : "--"'
+RAIN = '[WEATHER.IS_AVAILABLE] ? round([WEATHER.CHANCE_OF_PRECIPITATION]) : "--"'
+HR = '[HEART_RATE] > 0 ? [HEART_RATE] : "--"'
+SAMPLES.update({HI: '31', LO: '24', RAIN: '20', '[STEP_COUNT]': '6,240', HR: '72'})
+parts.append(T(284, 510, 'H %s°  L %s°', [HI, LO], size=12.5, color=GREY))
+parts.append(T(240, 563, '%s%s', [RAIN, '"%"'], size=17, color=WHITE, align='START', width=70))
+parts.append(T(237, 613, '%s', ['[STEP_COUNT]'], size=15, color=WHITE, align='START', width=80))
+parts.append(T(237, 653, '%s bpm', [HR], size=15, color=WHITE, align='START', width=80, launch='HEALTH_HEART_RATE'))
 # astronomy (ISS) — build 3
 parts.append(T(269, 807, '%s', ['"--"'], size=12.5, color='#6FA8F5'))
 parts.append(T(293, 836, '%s', ['"--"'], size=12.5, color=WHITE))
@@ -687,7 +717,7 @@ parts.append(T(961, 756, 'M31', [], size=12.5, color=WHITE))
 parts.append(T(961, 788, 'Andromeda', [], size=12, color='#C9CED6'))
 parts.append(T(903, 907, '%s', ['"--:--"'], size=12.5, color=WHITE))
 # tide — companion app
-parts.append(T(600, 600, 'MUMBAI', [], size=11, color='#C9CED6', align='START', width=90))
+parts.append(T(640, 600, 'MUMBAI', [], size=11, color='#C9CED6', align='START', width=90))
 parts.append(T(522, 645, '%s m', ['"--"'], size=19, color=WHITE, font='barlow_medium'))
 parts.append(T(710, 644, '%s', ['"-- "'], size=13, color=TIDE))
 parts.append(T(599, 804, '%s', ['"--:--"'], size=11.5, color=TIDE))
@@ -727,6 +757,22 @@ def bitmap_font(name, prefix, count, size):
     return ''.join(out)
 
 
+# battery: thin ring along the left edge, 225° (bottom-left) up to 315° (top-left) at 100 %
+def arc_draw(start, end, color, thick, expr=None, launch=None):
+    tr = '<Transform target="endAngle" value=%s/>' % q(expr) if expr else ''
+    return ('<PartDraw x="0" y="0" width="450" height="450">%s<Arc centerX="225" centerY="225" width="441" '
+            'height="441" startAngle="%d" endAngle="%d"><Stroke color="%s" thickness="%.1f" cap="ROUND"/>%s'
+            '</Arc></PartDraw>') % (('<Launch target="%s"/>' % launch) if launch else '', start, end, color,
+                                    thick, tr)
+
+
+BATT_END = '225 + 90 * [BATTERY_PERCENT] / 100'
+battery = (arc_draw(225, 315, '#2A3038', 3.5, launch='BATTERY_STATUS') +
+           '<Group name="batt" x="0" y="0" width="450" height="450"><Condition><Expressions>'
+           '<Expression name="low"><![CDATA[[BATTERY_PERCENT] <= 20]]></Expression></Expressions>'
+           '<Compare expression="low">%s</Compare><Default>%s</Default></Condition></Group>') % (
+    arc_draw(225, 315, '#E5484D', 3.5, BATT_END), arc_draw(225, 315, GREEN, 3.5, BATT_END))
+
 _n = len(PREVIEW)
 AMB = T(627, 371, '%s  %s %s', [DOW, '[DAY]', MON], size=17, color='#8A9099', font='barlow_medium', width=200)
 del PREVIEW[_n:]  # ambient-only text isn't part of the preview
@@ -745,11 +791,13 @@ xml = ['<?xml version="1.0" encoding="UTF-8"?>',
        ''.join(parts),
        secs,
        ampm_hide,
+       battery,
        '</Group>',
        # ambient: only date + time, dimmed
        '<Group name="ambient" x="0" y="0" width="450" height="450" alpha="0">',
        '<Variant mode="AMBIENT" target="alpha" value="255"/>',
        AMB,
+       '<Group name="moon_amb" x="0" y="0" width="450" height="450" alpha="140">' + AMB_MOON + '</Group>',
        '</Group>',
        clock,
        '</Scene>',
@@ -774,6 +822,8 @@ prev.alpha_composite(moon_img, (int(mx_ - msz / 2), int(my_ - msz / 2)))
 wxi = Image.open(os.path.join(RES, 'drawable-nodpi', 'wx_d_14.png')).resize((int(isz), int(isz)), Image.LANCZOS)
 prev.alpha_composite(wxi, (int(mx(286) - isz / 2), int(my(394) - isz / 2)))
 ptext(627, 460, '10:42', TSIZE, '#ECEFF3', 'barlow_medium')
+pd.arc((4.5, 4.5, 445.5, 445.5), 135, 225, fill=(42, 48, 56), width=4)
+pd.arc((4.5, 4.5, 445.5, 445.5), 135, 135 + 72, fill=hexrgb(GREEN), width=4)
 for (rx, ry, txt, size, color, font, align, width) in PREVIEW:
     if align == 'CENTER':
         ptext(rx, ry, txt, size, color, font)
