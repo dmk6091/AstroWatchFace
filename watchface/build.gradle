@@ -1,0 +1,36 @@
+// Watch Face Format watch face: resources only, no code.
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.dmk.astrowatchface'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.dmk.astrowatchface'
+        // Weather data needs Watch Face Format v2 = Wear OS 5 or newer (Galaxy Watch 8: Wear OS 6).
+        minSdk 34
+        targetSdk 35
+        versionCode Integer.parseInt(System.getenv('GITHUB_RUN_NUMBER') ?: '1')
+        versionName '1.' + (System.getenv('GITHUB_RUN_NUMBER') ?: 'local')
+    }
+
+    // Fixed key so every build updates the previous one in place.
+    signingConfigs {
+        release {
+            storeFile file('release.jks')
+            storePassword 'astrowatchface'
+            keyAlias 'astro'
+            keyPassword 'astrowatchface'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            shrinkResources false
+            signingConfig signingConfigs.release
+        }
+    }
+}
