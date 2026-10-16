@@ -39,6 +39,7 @@ FONT_FILES = {
     'barlow_semibold': 'Barlow-SemiBold.ttf',
     'barlow_sc_regular': 'BarlowSemiCondensed-Regular.ttf',
     'barlow_sc_medium': 'BarlowSemiCondensed-Medium.ttf',
+    'barlow_sc_semibold': 'BarlowSemiCondensed-SemiBold.ttf',
 }
 for name, f in FONT_FILES.items():
     with open(os.path.join(FONTS, f), 'rb') as src, open(os.path.join(RES, 'font', name + '.ttf'), 'wb') as dst:
@@ -208,7 +209,8 @@ bg_draw = d
 
 
 # ---- static text labels (drawn into the art)
-def label(text, x, y, size, color, font='barlow_sc_medium', anchor='mm', spacing=0):
+def label(text, x, y, size, color, font='barlow_sc_semibold', anchor='mm', spacing=0):
+    size *= 1.15  # readable on the real watch
     f = pil_font(font, size * SS)
     X, Y = P(x, y)
     if spacing:
@@ -401,7 +403,7 @@ paste_icon(wind_img(), 206, 613, 30)
 paste_icon(arrow_img(), 206, 653, 26)
 paste_icon(mountain_img(), 931, 379, 62)
 paste_icon(satellite_img(), 318, 774, 62)
-paste_icon(galaxy_img(), 910, 853, 150)
+paste_icon(galaxy_img(), 905, 852, 120)
 paste_icon(sun_img(ORANGE), 590, 892, 26)
 
 # moon-path dotted arc (static for now; the moon marker comes with the companion app)
@@ -562,10 +564,27 @@ def text_el(x, y, w, h, template, params, font, size, color, align='CENTER', nam
         x, y, w, h, (' name=%s' % q(name)) if name else '', align, font, size, color, template, ps)
 
 
-def T(rx, ry, template, params=(), size=12, color=WHITE, font='barlow_sc_medium', align='CENTER', width=None):
+PREVIEW = []
+SAMPLES = {}  # expression -> sample text for the preview image
+
+
+def T(rx, ry, template, params=(), size=12, color=WHITE, font='barlow_sc_semibold', align='CENTER', width=None):
     """Text centred vertically on ref (rx, ry); for START/END, rx is the left/right edge."""
     if not params:
         params, template = ['"%s"' % template], '%s'
+    if size < 20:
+        size *= 1.2  # small text was too thin to read on the watch
+    vals = []
+    for p_ in params:
+        if p_ in SAMPLES:
+            vals.append(SAMPLES[p_])
+        elif p_.startswith('"') and p_.endswith('"') and p_.count('"') == 2:
+            vals.append(p_[1:-1])
+        else:
+            vals = None
+            break
+    if vals is not None:
+        PREVIEW.append((rx, ry, template.replace('%s', '{}').format(*vals), size, color, font, align, width))
     fx, fy = mx(rx), my(ry)
     h = size * 1.45
     w = width if width else size * 6
@@ -599,18 +618,32 @@ def by_type(names):
 ILLUM = 'round((1 - cos([MOON_PHASE_POSITION] * 0.2243995)) * 50)'
 UVL = '([WEATHER.UV_INDEX] < 3 ? "LOW" : ([WEATHER.UV_INDEX] < 6 ? "MODERATE" : ([WEATHER.UV_INDEX] < 8 ? "HIGH" : ([WEATHER.UV_INDEX] < 11 ? "VERY HIGH" : "EXTREME"))))'
 
+SAMPLES.update({ILLUM: '78', by_type(PH1): 'Waxing', by_type(PH2): 'Gibbous', DOW: 'SAT', '[DAY]': '5', MON: 'SEP',
+                '%s ? round([WEATHER.TEMPERATURE]) : "--"' % '[WEATHER.IS_AVAILABLE]': '28',
+                '%s ? round([WEATHER.UV_INDEX]) : "-"' % '[WEATHER.IS_AVAILABLE]': '3',
+                '%s ? %s : ""' % ('[WEATHER.IS_AVAILABLE]', UVL): 'MODERATE', '[SECOND_Z]': '38'})
 # moon image via bitmap font: one "character" per phase position 0..27
 mx_, my_, msz = mx(627), my(244), ms(132)
-parts.append('<PartText x="%.1f" y="%.1f" width="%.1f" height="%.1f"><Text align="CENTER">'
-             '<BitmapFont family="moon" size="%.1f"><Template><![CDATA[%%s]]>'
-             '<Parameter expression="[MOON_PHASE_POSITION]"/></Template></BitmapFont></Text></PartText>'
-             % (mx_ - msz / 2, my_ - msz / 2, msz, msz, msz))
+def moon_img_el(i):
+    return '<PartImage x="0" y="0" width="%d" height="%d"><Image resource="moon_%02d"/></PartImage>' % (
+        round(msz), round(msz), i)
+
+
+cond = ['<Group name="moon" x="%.1f" y="%.1f" width="%.1f" height="%.1f"><Condition><Expressions>' % (
+    mx_ - msz / 2, my_ - msz / 2, msz, msz)]
+for i in range(27):
+    cond.append('<Expression name="m%d"><![CDATA[floor([MOON_PHASE_POSITION]) == %d]]></Expression>' % (i, i))
+cond.append('</Expressions>')
+for i in range(27):
+    cond.append('<Compare expression="m%d">%s</Compare>' % (i, moon_img_el(i)))
+cond.append('<Default>%s</Default></Condition></Group>' % moon_img_el(27))
+parts.append(''.join(cond))
 parts.append(T(425, 241, '%s', ['"--:--"'], size=14, color=WHITE, align='START', width=60))
 parts.append(T(425, 284, '%s', ['"--:--"'], size=14, color=WHITE, align='START', width=60))
 parts.append(T(800, 231, '%s', [ILLUM], size=15, color='#6FA8F5', align='END', width=50))
 parts.append(T(802, 231, '%s', ['"%"'], size=15, color='#6FA8F5', align='START', width=20))
-parts.append(T(784, 266, '%s', [by_type(PH1)], size=11.5, color='#C9CED6'))
-parts.append(T(784, 295, '%s', [by_type(PH2)], size=11.5, color='#C9CED6'))
+parts.append(T(784, 262, '%s', [by_type(PH1)], size=11.5, color='#C9CED6'))
+parts.append(T(784, 298, '%s', [by_type(PH2)], size=11.5, color='#C9CED6'))
 # date
 parts.append(T(536, 371, '%s', [DOW], size=17, color='#5FA2F5', font='barlow_semibold'))
 parts.append(T(690, 371, '%s %s', ['[DAY]', MON], size=17, color='#E9ECF1', font='barlow_medium'))
@@ -632,9 +665,9 @@ def wx_text(fam):
 
 
 parts.append(wx_icon % (mx(286) - isz / 2, my(394) - isz / 2, isz, isz, wx_text('wx_day'), wx_text('wx_night')))
-parts.append(T(293, 460, '%s°', ['%s ? round([WEATHER.TEMPERATURE]) : "--"' % WXAVAIL], size=25, color=WHITE,
+parts.append(T(293, 452, '%s°', ['%s ? round([WEATHER.TEMPERATURE]) : "--"' % WXAVAIL], size=25, color=WHITE,
                font='barlow_medium'))
-parts.append(T(284, 504, 'Feels %s', ['"--°"'], size=12.5, color=GREY))
+parts.append(T(284, 510, 'Feels %s', ['"--°"'], size=12.5, color=GREY))
 parts.append(T(240, 563, '%s', ['"--%"'], size=17, color=WHITE, align='START', width=70))
 parts.append(T(237, 613, '%s', ['"-- km/h"'], size=15, color=WHITE, align='START', width=80))
 parts.append(T(237, 653, '%s', ['"--"'], size=15, color=WHITE, align='START', width=60))
@@ -650,9 +683,8 @@ parts.append(T(1040, 543, '%s m', ['"--"'], size=11, color=GREEN, align='END', w
 parts.append(T(1040, 571, '%s m', ['"--"'], size=11, color=GREEN, align='END', width=60))
 parts.append(T(900, 655, '%s hPa', ['"----"'], size=14, color=WHITE, align='START', width=90))
 # deep sky — build 3
-parts.append(T(961, 761, 'M31', [], size=12.5, color=WHITE))
-parts.append(T(961, 789, 'Andromeda', [], size=12, color='#C9CED6'))
-parts.append(T(961, 815, 'Galaxy', [], size=12, color='#C9CED6'))
+parts.append(T(961, 756, 'M31', [], size=12.5, color=WHITE))
+parts.append(T(961, 788, 'Andromeda', [], size=12, color='#C9CED6'))
 parts.append(T(903, 907, '%s', ['"--:--"'], size=12.5, color=WHITE))
 # tide — companion app
 parts.append(T(600, 600, 'MUMBAI', [], size=11, color='#C9CED6', align='START', width=90))
@@ -695,12 +727,14 @@ def bitmap_font(name, prefix, count, size):
     return ''.join(out)
 
 
+_n = len(PREVIEW)
+AMB = T(627, 371, '%s  %s %s', [DOW, '[DAY]', MON], size=17, color='#8A9099', font='barlow_medium', width=200)
+del PREVIEW[_n:]  # ambient-only text isn't part of the preview
 xml = ['<?xml version="1.0" encoding="UTF-8"?>',
        '<WatchFace width="450" height="450">',
        '<Metadata key="CLOCK_TYPE" value="DIGITAL"/>',
        '<Metadata key="PREVIEW_TIME" value="10:42:38"/>',
        '<BitmapFonts>',
-       bitmap_font('moon', 'moon_', 28, 120),
        bitmap_font('wx_day', 'wx_d_', 16, 96),
        bitmap_font('wx_night', 'wx_n_', 16, 96),
        '</BitmapFonts>',
@@ -715,7 +749,7 @@ xml = ['<?xml version="1.0" encoding="UTF-8"?>',
        # ambient: only date + time, dimmed
        '<Group name="ambient" x="0" y="0" width="450" height="450" alpha="0">',
        '<Variant mode="AMBIENT" target="alpha" value="255"/>',
-       T(627, 371, '%s  %s %s', [DOW, '[DAY]', MON], size=17, color='#8A9099', font='barlow_medium', width=200),
+       AMB,
        '</Group>',
        clock,
        '</Scene>',
@@ -740,19 +774,12 @@ prev.alpha_composite(moon_img, (int(mx_ - msz / 2), int(my_ - msz / 2)))
 wxi = Image.open(os.path.join(RES, 'drawable-nodpi', 'wx_d_14.png')).resize((int(isz), int(isz)), Image.LANCZOS)
 prev.alpha_composite(wxi, (int(mx(286) - isz / 2), int(my(394) - isz / 2)))
 ptext(627, 460, '10:42', TSIZE, '#ECEFF3', 'barlow_medium')
-ptext(414, 502, 'AM', 14, '#5FA2F5', 'barlow_medium')
-ptext(823, 497, '38', 16, '#5FA2F5', 'barlow_medium')
-ptext(536, 371, 'SAT', 17, '#5FA2F5', 'barlow_semibold')
-ptext(690, 371, '5 SEP', 17, WHITE, 'barlow_medium')
-ptext(787, 231, '78%', 15, '#6FA8F5')
-ptext(784, 266, 'Waxing', 11.5, '#C9CED6')
-ptext(784, 295, 'Gibbous', 11.5, '#C9CED6')
-ptext(293, 460, '28°', 25, WHITE, 'barlow_medium')
-ptext(621, 956, '3', 21, ORANGE, 'barlow_medium')
-ptext(621, 988, 'MODERATE', 9.5, '#D9DDE3')
-ptext(961, 761, 'M31', 12.5, WHITE)
-ptext(961, 789, 'Andromeda', 12, '#C9CED6')
-ptext(961, 815, 'Galaxy', 12, '#C9CED6')
-ptext(600, 600, 'MUMBAI', 11, '#C9CED6', anchor='lm')
+for (rx, ry, txt, size, color, font, align, width) in PREVIEW:
+    if align == 'CENTER':
+        ptext(rx, ry, txt, size, color, font)
+    elif align == 'START':
+        ptext(rx, ry, txt, size, color, font, anchor='lm')
+    else:
+        ptext(rx, ry, txt, size, color, font, anchor='rm')
 prev.convert('RGB').save(os.path.join(RES, 'drawable-nodpi', 'preview.png'), optimize=True)
 print('ok')
