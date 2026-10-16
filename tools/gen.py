@@ -758,11 +758,11 @@ def bitmap_font(name, prefix, count, size):
 
 
 # battery: thin ring along the left edge, 225° (bottom-left) up to 315° (top-left) at 100 %
-def arc_draw(start, end, color, thick, expr=None, launch=None):
+def arc_draw(start, end, color, thick, expr=None, launch=None, d=432):
     tr = '<Transform target="endAngle" value=%s/>' % q(expr) if expr else ''
-    return ('<PartDraw x="0" y="0" width="450" height="450">%s<Arc centerX="225" centerY="225" width="441" '
-            'height="441" startAngle="%d" endAngle="%d"><Stroke color="%s" thickness="%.1f" cap="ROUND"/>%s'
-            '</Arc></PartDraw>') % (('<Launch target="%s"/>' % launch) if launch else '', start, end, color,
+    return ('<PartDraw x="0" y="0" width="450" height="450">%s<Arc centerX="225" centerY="225" width="%d" '
+            'height="%d" startAngle="%d" endAngle="%d"><Stroke color="%s" thickness="%.1f" cap="ROUND"/>%s'
+            '</Arc></PartDraw>') % (('<Launch target="%s"/>' % launch) if launch else '', d, d, start, end, color,
                                     thick, tr)
 
 
@@ -772,6 +772,14 @@ battery = (arc_draw(225, 315, '#2A3038', 3.5, launch='BATTERY_STATUS') +
            '<Expression name="low"><![CDATA[[BATTERY_PERCENT] <= 20]]></Expression></Expressions>'
            '<Compare expression="low">%s</Compare><Default>%s</Default></Condition></Group>') % (
     arc_draw(225, 315, '#E5484D', 3.5, BATT_END), arc_draw(225, 315, GREEN, 3.5, BATT_END))
+
+# and a very thin full ring around the edge, filling clockwise from 12 o'clock
+RING_END = '360 * [BATTERY_PERCENT] / 100'
+battery += (arc_draw(0, 360, '#1E232A', 1.6, d=446) +
+            '<Group name="batt_ring" x="0" y="0" width="450" height="450"><Condition><Expressions>'
+            '<Expression name="low2"><![CDATA[[BATTERY_PERCENT] <= 20]]></Expression></Expressions>'
+            '<Compare expression="low2">%s</Compare><Default>%s</Default></Condition></Group>') % (
+    arc_draw(0, 360, '#E5484D', 1.6, RING_END, d=446), arc_draw(0, 360, GREEN, 1.6, RING_END, d=446))
 
 _n = len(PREVIEW)
 AMB = T(627, 371, '%s  %s %s', [DOW, '[DAY]', MON], size=17, color='#8A9099', font='barlow_medium', width=200)
@@ -822,8 +830,10 @@ prev.alpha_composite(moon_img, (int(mx_ - msz / 2), int(my_ - msz / 2)))
 wxi = Image.open(os.path.join(RES, 'drawable-nodpi', 'wx_d_14.png')).resize((int(isz), int(isz)), Image.LANCZOS)
 prev.alpha_composite(wxi, (int(mx(286) - isz / 2), int(my(394) - isz / 2)))
 ptext(627, 460, '10:42', TSIZE, '#ECEFF3', 'barlow_medium')
-pd.arc((4.5, 4.5, 445.5, 445.5), 135, 225, fill=(42, 48, 56), width=4)
-pd.arc((4.5, 4.5, 445.5, 445.5), 135, 135 + 72, fill=hexrgb(GREEN), width=4)
+pd.arc((9, 9, 441, 441), 135, 225, fill=(42, 48, 56), width=4)
+pd.arc((9, 9, 441, 441), 135, 135 + 72, fill=hexrgb(GREEN), width=4)
+pd.arc((2, 2, 448, 448), 0, 360, fill=(30, 35, 42), width=2)
+pd.arc((2, 2, 448, 448), -90, -90 + 288, fill=hexrgb(GREEN), width=2)
 for (rx, ry, txt, size, color, font, align, width) in PREVIEW:
     if align == 'CENTER':
         ptext(rx, ry, txt, size, color, font)
