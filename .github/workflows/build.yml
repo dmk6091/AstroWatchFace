@@ -20,7 +20,7 @@ jobs:
           mkdir -p /tmp/v && javac -cp "$V/validator/libs/*" -d /tmp/v $(find $V/validator/src -name "*.java")
           (cd $V/documents && zip -qr /tmp/v/docs.zip .)
           java -cp "/tmp/v:$V/validator/libs/*" com.samsung.watchface.DWFValidationApplication 2 \
-            watchface/src/main/res/raw/watchface.xml | tee v.log
+            watchface/src/main/res/raw/watchface.xml 2>&1 | tee v.log
           grep -q "PASSED" v.log || { grep SEVERE v.log | while IFS= read -r l; do echo "::error::$l"; done; exit 1; }
       - name: Build
         run: |
