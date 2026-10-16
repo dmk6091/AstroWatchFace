@@ -210,7 +210,7 @@ bg_draw = d
 
 # ---- static text labels (drawn into the art)
 def label(text, x, y, size, color, font='barlow_sc_semibold', anchor='mm', spacing=0):
-    size *= 1.15  # readable on the real watch
+    size *= 1.0 if spacing else 1.15  # titles stay small, small labels readable
     f = pil_font(font, size * SS)
     X, Y = P(x, y)
     if spacing:
@@ -232,9 +232,9 @@ label('WEATHER', 322, 337, 10.5, BLUE, spacing=0.4)
 label('ELEVATION', 927, 337, 10.5, GREEN, spacing=0.4)
 label('ASTRONOMY', 269, 724, 10.5, PURPLE, spacing=0.4)
 label('DEEP SKY', 975, 724, 10.5, PURPLE, spacing=0.4)
-label('BARO', 900, 623, 9.5, GREY, anchor='lm')
-label('MAX', 897, 543, 9.5, GREEN, anchor='lm')
-label('MIN', 897, 571, 9.5, GREEN, anchor='lm')
+label('BARO', 910, 623, 9.5, GREY, anchor='lm')
+label('MAX', 905, 543, 9.5, GREEN, anchor='lm')
+label('MIN', 905, 571, 9.5, GREEN, anchor='lm')
 label('TIDE', 612, 600, 11, TIDE, anchor='rm', spacing=0.5)
 bg_draw.ellipse([*P(622, 596), *P(630, 604)], fill=hexrgb('#9AA3AE'))
 label('SUN', 610, 892, 10.5, ORANGE, anchor='lm', spacing=0.5)
@@ -420,9 +420,9 @@ paste_icon(crescent_img(), 401, 241, 30)
 paste_icon(moonset_img(), 401, 284, 32)
 paste_icon(sun_img(ORANGE, half=True), 497, 546, 38)
 paste_icon(sun_img('#F28B3D', half=True), 672, 546, 38)
-paste_icon(drop_img(), 209, 563, 26)
-paste_icon(steps_img(), 206, 613, 30)
-paste_icon(heart_img(), 206, 653, 26)
+paste_icon(drop_img(), 194, 563, 28)
+paste_icon(steps_img(), 192, 613, 32)
+paste_icon(heart_img(), 192, 655, 28)
 paste_icon(mountain_img(), 931, 379, 62)
 paste_icon(satellite_img(), 318, 774, 62)
 paste_icon(galaxy_img(), 905, 852, 120)
@@ -663,18 +663,18 @@ for i in range(27):
 cond.append('<Default>%s</Default></Condition></Group>' % moon_img_el(27))
 parts.append(''.join(cond))
 AMB_MOON = ''.join(cond).replace('<Group name="moon"', '<Group name="moon2"')
-parts.append(T(425, 241, '%s', ['"--:--"'], size=14, color=WHITE, align='START', width=60))
-parts.append(T(425, 284, '%s', ['"--:--"'], size=14, color=WHITE, align='START', width=60))
+parts.append(T(425, 241, '%s', ['"--:--"'], size=15.5, color=WHITE, align='START', width=60))
+parts.append(T(425, 284, '%s', ['"--:--"'], size=15.5, color=WHITE, align='START', width=60))
 parts.append(T(800, 231, '%s', [ILLUM], size=15, color='#6FA8F5', align='END', width=50))
 parts.append(T(802, 231, '%s', ['"%"'], size=15, color='#6FA8F5', align='START', width=20))
-parts.append(T(784, 262, '%s', [by_type(PH1)], size=11.5, color='#C9CED6'))
-parts.append(T(784, 298, '%s', [by_type(PH2)], size=11.5, color='#C9CED6'))
+parts.append(T(790, 262, '%s', [by_type(PH1)], size=12.5, color='#C9CED6'))
+parts.append(T(790, 298, '%s', [by_type(PH2)], size=12.5, color='#C9CED6'))
 # date
 parts.append(T(536, 371, '%s', [DOW], size=17, color='#5FA2F5', font='barlow_semibold', launch='CALENDAR'))
 parts.append(T(690, 371, '%s %s', ['[DAY]', MON], size=17, color='#E9ECF1', font='barlow_medium', launch='CALENDAR'))
 # sunrise / sunset (companion app)
-parts.append(T(527, 546, '%s', ['"--:--"'], size=13.5, color=WHITE, align='START', width=60))
-parts.append(T(702, 546, '%s', ['"--:--"'], size=13.5, color=WHITE, align='START', width=60))
+parts.append(T(527, 546, '%s', ['"--:--"'], size=15, color=WHITE, align='START', width=60))
+parts.append(T(702, 546, '%s', ['"--:--"'], size=15, color=WHITE, align='START', width=60))
 # weather
 WXAVAIL = '[WEATHER.IS_AVAILABLE]'
 wx_icon = ('<Group name="wx_icon" x="%.1f" y="%.1f" width="%.1f" height="%.1f"><Condition><Expressions>'
@@ -690,48 +690,48 @@ def wx_text(fam):
 
 
 parts.append(wx_icon % (mx(286) - isz / 2, my(394) - isz / 2, isz, isz, wx_text('wx_day'), wx_text('wx_night')))
-parts.append(T(293, 452, '%s°', ['%s ? round([WEATHER.TEMPERATURE]) : "--"' % WXAVAIL], size=25, color=WHITE,
+parts.append(T(293, 450, '%s°', ['%s ? round([WEATHER.TEMPERATURE]) : "--"' % WXAVAIL], size=29, color=WHITE,
                font='barlow_medium'))
 HI = '[WEATHER.IS_AVAILABLE] ? round([WEATHER.DAY_TEMPERATURE_HIGH]) : "--"'
 LO = '[WEATHER.IS_AVAILABLE] ? round([WEATHER.DAY_TEMPERATURE_LOW]) : "--"'
 RAIN = '[WEATHER.IS_AVAILABLE] ? round([WEATHER.CHANCE_OF_PRECIPITATION]) : "--"'
 HR = '[HEART_RATE] > 0 ? [HEART_RATE] : "--"'
 SAMPLES.update({HI: '31', LO: '24', RAIN: '20', '[STEP_COUNT]': '6,240', HR: '72'})
-parts.append(T(284, 510, 'H %s°  L %s°', [HI, LO], size=12.5, color=GREY))
-parts.append(T(240, 563, '%s%s', [RAIN, '"%"'], size=17, color=WHITE, align='START', width=70))
-parts.append(T(237, 613, '%s', ['[STEP_COUNT]'], size=15, color=WHITE, align='START', width=80))
-parts.append(T(237, 653, '%s bpm', [HR], size=15, color=WHITE, align='START', width=80, launch='HEALTH_HEART_RATE'))
+parts.append(T(284, 510, 'H %s°  L %s°', [HI, LO], size=14.5, color=GREY))
+parts.append(T(222, 563, '%s%s', [RAIN, '"%"'], size=20, color=WHITE, align='START', width=70))
+parts.append(T(220, 613, '%s', ['[STEP_COUNT]'], size=18, color=WHITE, align='START', width=80))
+parts.append(T(220, 655, '%s bpm', [HR], size=18, color=WHITE, align='START', width=80, launch='HEALTH_HEART_RATE'))
 # astronomy (ISS) — build 3
-parts.append(T(269, 807, '%s', ['"--"'], size=12.5, color='#6FA8F5'))
-parts.append(T(293, 836, '%s', ['"--"'], size=12.5, color=WHITE))
-parts.append(T(325, 867, '%s', ['"--°"'], size=12.5, color=WHITE))
-parts.append(T(329, 907, '%s', ['"--:--"'], size=12.5, color=WHITE))
+parts.append(T(262, 807, '%s', ['"--"'], size=14.5, color='#6FA8F5'))
+parts.append(T(286, 838, '%s', ['"--"'], size=14.5, color=WHITE))
+parts.append(T(318, 869, '%s', ['"--°"'], size=14.5, color=WHITE))
+parts.append(T(325, 907, '%s', ['"--:--"'], size=14.5, color=WHITE))
 # elevation / baro — companion app
-parts.append(T(934, 446, '%s m', ['"----"'], size=21, color=WHITE, font='barlow_medium'))
-parts.append(T(934, 495, '+%s m', ['"--"'], size=13, color=GREEN))
-parts.append(T(1040, 543, '%s m', ['"--"'], size=11, color=GREEN, align='END', width=60))
-parts.append(T(1040, 571, '%s m', ['"--"'], size=11, color=GREEN, align='END', width=60))
-parts.append(T(900, 655, '%s hPa', ['"----"'], size=14, color=WHITE, align='START', width=90))
+parts.append(T(946, 446, '%s m', ['"----"'], size=25, color=WHITE, font='barlow_medium'))
+parts.append(T(946, 495, '+%s m', ['"--"'], size=15.5, color=GREEN))
+parts.append(T(1058, 543, '%s m', ['"--"'], size=13, color=GREEN, align='END', width=60))
+parts.append(T(1058, 571, '%s m', ['"--"'], size=13, color=GREEN, align='END', width=60))
+parts.append(T(908, 657, '%s hPa', ['"----"'], size=16.5, color=WHITE, align='START', width=90))
 # deep sky — build 3
-parts.append(T(961, 756, 'M31', [], size=12.5, color=WHITE))
-parts.append(T(961, 788, 'Andromeda', [], size=12, color='#C9CED6'))
-parts.append(T(903, 907, '%s', ['"--:--"'], size=12.5, color=WHITE))
+parts.append(T(972, 756, 'M31', [], size=14, color=WHITE))
+parts.append(T(972, 789, 'Andromeda', [], size=13.5, color='#C9CED6'))
+parts.append(T(912, 907, '%s', ['"--:--"'], size=14.5, color=WHITE))
 # tide — companion app
 parts.append(T(640, 600, 'MUMBAI', [], size=11, color='#C9CED6', align='START', width=90))
-parts.append(T(522, 645, '%s m', ['"--"'], size=19, color=WHITE, font='barlow_medium'))
-parts.append(T(710, 644, '%s', ['"-- "'], size=13, color=TIDE))
-parts.append(T(599, 804, '%s', ['"--:--"'], size=11.5, color=TIDE))
-parts.append(T(676, 804, '%s m', ['"--"'], size=11.5, color=TIDE))
-parts.append(T(599, 836, '%s', ['"--:--"'], size=11.5, color=TIDE))
-parts.append(T(676, 836, '%s m', ['"--"'], size=11.5, color=TIDE))
+parts.append(T(522, 645, '%s m', ['"--"'], size=23, color=WHITE, font='barlow_medium'))
+parts.append(T(710, 644, '%s', ['"-- "'], size=15, color=TIDE))
+parts.append(T(599, 804, '%s', ['"--:--"'], size=13.5, color=TIDE))
+parts.append(T(683, 804, '%s m', ['"--"'], size=13.5, color=TIDE))
+parts.append(T(599, 836, '%s', ['"--:--"'], size=13.5, color=TIDE))
+parts.append(T(683, 836, '%s m', ['"--"'], size=13.5, color=TIDE))
 # sun
-parts.append(T(488, 963, '%s', ['"--°"'], size=14, color=WHITE))
-parts.append(T(621, 956, '%s', ['%s ? round([WEATHER.UV_INDEX]) : "-"' % WXAVAIL], size=21, color=ORANGE,
+parts.append(T(482, 963, '%s', ['"--°"'], size=16.5, color=WHITE))
+parts.append(T(621, 954, '%s', ['%s ? round([WEATHER.UV_INDEX]) : "-"' % WXAVAIL], size=24, color=ORANGE,
                font='barlow_medium'))
-parts.append(T(621, 988, '%s', ['%s ? %s : ""' % (WXAVAIL, UVL)], size=9.5, color='#D9DDE3'))
-parts.append(T(763, 963, '%s', ['"--h --m"'], size=14, color=WHITE))
+parts.append(T(621, 989, '%s', ['%s ? %s : ""' % (WXAVAIL, UVL)], size=10.5, color='#D9DDE3'))
+parts.append(T(768, 963, '%s', ['"--h --m"'], size=16.5, color=WHITE))
 # compass — companion app
-parts.append(T(627, 1042, '%s', ['"---°"'], size=14.5, color=WHITE, font='barlow_medium'))
+parts.append(T(627, 1042, '%s', ['"---°"'], size=16, color=WHITE, font='barlow_medium'))
 parts.append(T(627, 1067, '%s', ['"--"'], size=9.5, color=WHITE))
 
 # clock
