@@ -8,25 +8,38 @@ import androidx.wear.watchface.complications.data.ComplicationType;
 import androidx.wear.watchface.complications.data.NoDataComplicationData;
 import androidx.wear.watchface.complications.data.PhotoImageComplicationData;
 import androidx.wear.watchface.complications.data.PlainComplicationText;
+import androidx.wear.watchface.complications.data.SmallImage;
+import androidx.wear.watchface.complications.data.SmallImageComplicationData;
+import androidx.wear.watchface.complications.data.SmallImageType;
 import androidx.wear.watchface.complications.datasource.ComplicationDataSourceService;
 import androidx.wear.watchface.complications.datasource.ComplicationRequest;
 
 /** Today's tide curve as a picture for the face's tide panel. */
 public class TideGraphService extends ComplicationDataSourceService {
 
-    static ComplicationData photo(android.graphics.Bitmap b) {
-        return new PhotoImageComplicationData.Builder(Icon.createWithBitmap(b),
-                new PlainComplicationText.Builder("Tide graph").build()).build();
+    /** As a small "photo" image (what Samsung lets other apps provide), or a full photo image. */
+    static ComplicationData image(ComplicationType type, android.graphics.Bitmap b) {
+        PlainComplicationText desc = new PlainComplicationText.Builder("Tide graph").build();
+        if (type == ComplicationType.PHOTO_IMAGE) {
+            return new PhotoImageComplicationData.Builder(Icon.createWithBitmap(b), desc).build();
+        }
+        return new SmallImageComplicationData.Builder(
+                new SmallImage.Builder(Icon.createWithBitmap(b), SmallImageType.PHOTO).build(), desc).build();
+    }
+
+    static boolean ours(ComplicationType t) {
+        return t == ComplicationType.SMALL_IMAGE || t == ComplicationType.PHOTO_IMAGE;
     }
 
     @Override
     public void onComplicationRequest(ComplicationRequest request, ComplicationRequestListener listener) {
         ComplicationData data;
         try {
-            if (request.getComplicationType() != ComplicationType.PHOTO_IMAGE) {
+            if (!ours(request.getComplicationType())) {
                 data = new NoDataComplicationData();
             } else {
-                data = photo(Tide.graph(Tide.Series.load(Store.p(this)), System.currentTimeMillis()));
+                data = image(request.getComplicationType(),
+                        Tide.graph(Tide.Series.load(Store.p(this)), System.currentTimeMillis()));
             }
         } catch (Throwable t) {
             Log.w(Engine.TAG, "graph: " + t);
@@ -42,7 +55,7 @@ public class TideGraphService extends ComplicationDataSourceService {
     /** Sample curve for the complication picker (it hides sources that give no preview). */
     @Override
     public ComplicationData getPreviewData(ComplicationType type) {
-        if (type != ComplicationType.PHOTO_IMAGE) return null;
+        if (!ours(type)) return null;
         long now = System.currentTimeMillis();
         long[] t = new long[73];
         double[] h = new double[73];
@@ -51,6 +64,6 @@ public class TideGraphService extends ComplicationDataSourceService {
             t[i] = start + i * 3600L;
             h[i] = 1.6 * Math.cos(2 * Math.PI * i / 12.42);  // two tides a day
         }
-        return photo(Tide.graph(new Tide.Series(t, h), now));
+        return image(type, Tide.graph(new Tide.Series(t, h), now));
     }
 }

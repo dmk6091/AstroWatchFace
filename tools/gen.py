@@ -792,16 +792,18 @@ data_slot = ('<ComplicationSlot x="0" y="0" width="450" height="450" slotId="0" 
 gx, gy = mx(398), my(664)
 gw, gh = mx(842) - gx, my(758) - gy
 graph_slot = ('<ComplicationSlot x="%d" y="%d" width="%d" height="%d" slotId="1" displayName="Tide graph" '
-              'supportedTypes="PHOTO_IMAGE EMPTY" isCustomizable="TRUE">'
+              'supportedTypes="SMALL_IMAGE PHOTO_IMAGE EMPTY" isCustomizable="TRUE">'
               '<DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="EMPTY" '
               'primaryProvider="com.dmk.astrocompanion/com.dmk.astrocompanion.TideGraphService" '
-              'primaryProviderType="PHOTO_IMAGE"/>'
+              'primaryProviderType="SMALL_IMAGE"/>'
               '<BoundingBox x="0" y="0" width="%d" height="%d"/>'
+              '<Complication type="SMALL_IMAGE"><PartImage x="0" y="0" width="%d" height="%d">'
+              '<Image resource="[COMPLICATION.SMALL_IMAGE]"/></PartImage></Complication>'
               '<Complication type="PHOTO_IMAGE"><PartImage x="0" y="0" width="%d" height="%d">'
               '<Image resource="[COMPLICATION.PHOTO_IMAGE]"/></PartImage></Complication>'
               '<Variant mode="AMBIENT" target="alpha" value="0"/>'
               '</ComplicationSlot>') % (round(gx), round(gy), round(gw), round(gh), round(gw), round(gh),
-                                        round(gw), round(gh))
+                                        round(gw), round(gh), round(gw), round(gh))
 
 # FieldSpec.java for the companion
 spec_dir = os.path.join(os.path.dirname(OUT.rstrip('/')), '..', '..', 'companion', 'src', 'main', 'java', 'com',
