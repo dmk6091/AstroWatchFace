@@ -129,9 +129,19 @@ public class MainActivity extends Activity {
         long me = Updater.installed(this, getPackageName()), face = Updater.installed(this, Updater.FACE_PKG);
         boolean newer = latest > me || (face >= 0 && latest > face);
         StringBuilder s = new StringBuilder(Updater.versions(this));
-        if (newer) s.append("\nBuild ").append(latest).append(" available");
+        if (newer) {
+            s.append("\nBuild ").append(latest).append(" available");
+            // what changed: first line of the release text
+            String notes = p.getString("updNotes", "").trim();
+            int nl = notes.indexOf('\n');
+            if (nl > 0) notes = notes.substring(0, nl);
+            if (notes.length() > 90) notes = notes.substring(0, 88) + "…";
+            if (!notes.isEmpty()) s.append(":\n").append(notes);
+        } else if (latest > 0) {
+            s.append(" · up to date");
+        }
         String st = p.getString("updStatus", "");
-        if (!st.isEmpty() && !newer) s.append('\n').append(st);
+        if (!st.isEmpty() && !newer && !st.startsWith("Up to date")) s.append('\n').append(st);
         updLine.setText(s);
         updLine.setTextColor(newer ? Color.rgb(120, 220, 140) : Color.rgb(200, 205, 214));
         updBtn.setText(newer ? "Install build " + latest : "Check for update");
