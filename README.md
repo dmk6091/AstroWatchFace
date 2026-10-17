@@ -23,7 +23,13 @@ Parts:
 * `tools/globe.py` – the globe maths (the companion's `Globe.java` is the same in Java).
 
 Every push builds on GitHub Actions, validates the XML with Google's validator and publishes both
-APKs as the `latest` release. Install with Wireless debugging (GeminiMan, Bugjaeger or adb).
+APKs as the `latest` release.
+
+Updates: the Astro app on the watch updates itself and the face from that release
+(*Update now*, plus *Auto-update* every few hours). First install with Wireless debugging
+(GeminiMan, Bugjaeger or adb); if the watch has no "install unknown apps" switch for Astro, run once:
+`adb shell appops set com.dmk.astrocompanion REQUEST_INSTALL_PACKAGES allow`.
+The first face update asks for one tap on the watch, later ones are silent.
 
 Credits: Barlow font (SIL OFL, `tools/Barlow-OFL.txt`); Earth textures from the three.js examples
 (NASA Blue Marble / Black Marble based).

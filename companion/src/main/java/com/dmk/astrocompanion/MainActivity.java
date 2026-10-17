@@ -21,7 +21,9 @@ import java.util.Map;
 /** Small settings / status screen on the watch. */
 public class MainActivity extends Activity {
     private LinearLayout list;
-    private TextView status;
+    private TextView status, updLine, updBtn;
+    private volatile boolean updBusy;
+    private volatile String updMsg = "";
 
     @Override
     protected void onCreate(Bundle b) {
@@ -35,7 +37,6 @@ public class MainActivity extends Activity {
         list.setPadding(pad, dp(30), pad, dp(40));
         sv.addView(list);
         setContentView(sv);
-        build();
         Worker.schedule(this);
     }
 
@@ -43,7 +44,8 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         askLocation();
-        refreshStatus();
+        build(); // (also after coming back from the install permission screen)
+        peekUpdate();
     }
 
     private int dp(float v) {
@@ -90,6 +92,22 @@ public class MainActivity extends Activity {
             refreshNow();
         });
         button("Refresh now", this::refreshNow);
+
+        // updates straight from GitHub (no phone / adb)
+        updLine = text("", 12, Color.rgb(200, 205, 214));
+        updBtn = button("Check for update", this::updateNow);
+        updBtn.setEnabled(!updBusy);
+        boolean auto = p.getBoolean("autoUpd", true);
+        button("Auto-update: " + (auto ? "on" : "off"), () -> {
+            p.edit().putBoolean("autoUpd", !auto).apply();
+            build();
+        });
+        if (!Updater.allowed(this)) {
+            button("Allow installing updates", this::allowInstalls);
+            text("No switch on that screen? Run once with GeminiMan / adb shell:\n" + Updater.GRANT_CMD, 11, Color.GRAY);
+        }
+        showUpdate();
+
         button("Allow location all the time", () -> {
             Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getPackageName()));
             startActivity(i);
@@ -97,6 +115,74 @@ public class MainActivity extends Activity {
         text("Data: Open-Meteo (weather, marine). Tide is a forecast model, not a harbour table.", 10, Color.GRAY);
         refreshStatus();
     }
+
+    // ------------------------------------------------------------ updates
+
+    private void showUpdate() {
+        if (updLine == null) return;
+        if (updBusy) {
+            updLine.setText(updMsg);
+            return;
+        }
+        SharedPreferences p = Store.p(this);
+        long latest = p.getLong("updLatest", 0);
+        long me = Updater.installed(this, getPackageName()), face = Updater.installed(this, Updater.FACE_PKG);
+        boolean newer = latest > me || (face >= 0 && latest > face);
+        StringBuilder s = new StringBuilder(Updater.versions(this));
+        if (newer) s.append("\nBuild ").append(latest).append(" available");
+        String st = p.getString("updStatus", "");
+        if (!st.isEmpty() && !newer) s.append('\n').append(st);
+        updLine.setText(s);
+        updLine.setTextColor(newer ? Color.rgb(120, 220, 140) : Color.rgb(200, 205, 214));
+        updBtn.setText(newer ? "Install build " + latest : "Check for update");
+    }
+
+    /** Quick look at GitHub when the screen opens (at most every 10 min), so a new build shows. */
+    private void peekUpdate() {
+        SharedPreferences p = Store.p(this);
+        if (updBusy || System.currentTimeMillis() - p.getLong("updSeen", 0) < 10 * 60_000L) return;
+        new Thread(() -> {
+            try {
+                Updater.Release r = Updater.latest();
+                p.edit().putLong("updSeen", System.currentTimeMillis()).putLong("updLatest", r.build)
+                        .putString("updNotes", r.notes).apply();
+                runOnUiThread(this::showUpdate);
+            } catch (Throwable ignored) {
+            }
+        }).start();
+    }
+
+    private void updateNow() {
+        if (updBusy) return;
+        if (!Updater.allowed(this)) {
+            allowInstalls();
+            return;
+        }
+        updBusy = true;
+        updBtn.setEnabled(false);
+        updLine.setTextColor(Color.rgb(200, 205, 214));
+        new Thread(() -> {
+            Updater.run(this, true, s -> runOnUiThread(() -> {
+                updMsg = s;
+                if (updLine != null) updLine.setText(s);
+            }));
+            runOnUiThread(() -> {
+                updBusy = false;
+                if (updBtn != null) updBtn.setEnabled(true);
+                showUpdate();
+            });
+        }).start();
+    }
+
+    private void allowInstalls() {
+        try {
+            startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getPackageName())));
+        } catch (Throwable t) {
+            updLine.setText("This watch hides that switch. Run once with GeminiMan / adb shell:\n" + Updater.GRANT_CMD);
+        }
+    }
+
+    // ------------------------------------------------------------ data
 
     private void refreshNow() {
         status.setText("Refreshing…");

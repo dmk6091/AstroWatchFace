@@ -25,6 +25,11 @@ public class Worker extends androidx.work.Worker {
     @Override
     public Result doWork() {
         Engine.refresh(getApplicationContext(), false);
+        // new build on GitHub? (every few hours, when auto-update is on; may restart this app)
+        try {
+            Updater.auto(getApplicationContext());
+        } catch (Throwable ignored) {
+        }
         return Result.success();
     }
 
