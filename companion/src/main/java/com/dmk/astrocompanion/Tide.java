@@ -98,7 +98,7 @@ final class Tide {
 
     /** The curve for today (00-24 h) as a picture sized for the face's tide panel. */
     static Bitmap graph(Series s, long nowMs) {
-        final int w = 412, hgt = 88;
+        final int w = 428, hgt = 64;
         Bitmap bmp = Bitmap.createBitmap(w, hgt, Bitmap.Config.ARGB_8888);
         if (s == null) return bmp;
         Canvas c = new Canvas(bmp);
@@ -110,7 +110,7 @@ final class Tide {
         cal.set(Calendar.MILLISECOND, 0);
         long day0 = cal.getTimeInMillis() / 1000;
         // plot area (matches the face's grid)
-        float x0 = 31, x1 = 406, y0 = 8, y1 = 76;
+        float x0 = 8, x1 = 420, y0 = 7, y1 = 57;
         double lo = Double.MAX_VALUE, hi = -Double.MAX_VALUE;
         int steps = 96;
         double[] v = new double[steps + 1];
@@ -167,16 +167,6 @@ final class Tide {
             pd.setColor(Color.WHITE);
             c.drawCircle(x, y, 5.5f, pd);
         }
-        // height scale on the left
-        Paint pt = new Paint(Paint.ANTI_ALIAS_FLAG);
-        pt.setColor(Color.rgb(138, 145, 156));
-        pt.setTextSize(15f);
-        pt.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
-        pt.setTextAlign(Paint.Align.RIGHT);
-        double mid = (lo + hi) / 2;
-        c.drawText(fmt(hi), 27, y0 + 6, pt);
-        c.drawText(fmt(mid), 27, (y0 + y1) / 2 + 5, pt);
-        c.drawText(fmt(lo), 27, y1 + 4, pt);
         return bmp;
     }
 

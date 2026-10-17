@@ -79,6 +79,36 @@ final class Astro {
         return new long[]{rise, set};
     }
 
+    /** Sun's declination and the longitude where it is overhead (radians): {dec, lon}. */
+    static double[] subsolar(long ms) {
+        double d = toDays(ms);
+        double[] c = sunCoords(d);
+        double gmst = RAD * (280.16 + 360.9856235 * d);
+        double lon = c[1] - gmst;
+        lon = ((lon + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+        return new double[]{c[0], lon};
+    }
+
+    /** Moon age in days since new moon (0..29.5), from the sun-moon elongation. */
+    static double moonAge(long ms) {
+        double d = toDays(ms);
+        double[] s = sunCoords(d); // {dec, ra}
+        double ml = RAD * (218.316 + 13.176396 * d);
+        double mm = RAD * (134.963 + 13.064993 * d);
+        double f = RAD * (93.272 + 13.229350 * d);
+        double l = ml + RAD * 6.289 * Math.sin(mm);
+        double b = RAD * 5.128 * Math.sin(f);
+        double mdist = 385001 - 20905 * Math.cos(mm);
+        double mra = rightAscension(l, b), mdec = declination(l, b);
+        double sdist = 149598000;
+        double phi = Math.acos(Math.sin(s[0]) * Math.sin(mdec) + Math.cos(s[0]) * Math.cos(mdec) * Math.cos(s[1] - mra));
+        double inc = Math.atan2(sdist * Math.sin(phi), mdist - sdist * Math.cos(phi));
+        double angle = Math.atan2(Math.cos(s[0]) * Math.sin(s[1] - mra),
+                Math.sin(s[0]) * Math.cos(mdec) - Math.cos(s[0]) * Math.sin(mdec) * Math.cos(s[1] - mra));
+        double phase = 0.5 + 0.5 * inc * (angle < 0 ? -1 : 1) / Math.PI;
+        return phase * 29.530589;
+    }
+
     /** 8-point compass name for a direction in degrees. */
     static String dir8(double deg) {
         String[] n = {"N", "NE", "E", "SE", "S", "SW", "W", "NW"};

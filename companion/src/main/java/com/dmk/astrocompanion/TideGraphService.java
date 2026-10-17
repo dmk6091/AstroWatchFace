@@ -19,7 +19,11 @@ public class TideGraphService extends ComplicationDataSourceService {
 
     /** As a small "photo" image (what Samsung lets other apps provide), or a full photo image. */
     static ComplicationData image(ComplicationType type, android.graphics.Bitmap b) {
-        PlainComplicationText desc = new PlainComplicationText.Builder("Tide graph").build();
+        return image(type, b, "Tide graph");
+    }
+
+    static ComplicationData image(ComplicationType type, android.graphics.Bitmap b, String what) {
+        PlainComplicationText desc = new PlainComplicationText.Builder(what).build();
         if (type == ComplicationType.PHOTO_IMAGE) {
             return new PhotoImageComplicationData.Builder(Icon.createWithBitmap(b), desc).build();
         }

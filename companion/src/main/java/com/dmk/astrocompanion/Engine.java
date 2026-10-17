@@ -145,6 +145,16 @@ final class Engine {
             st.append("weather failed: ").append(t.getMessage());
         }
         try {
+            String url = String.format(Locale.US, "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=%.4f"
+                    + "&longitude=%.4f&current=us_aqi", lat, lon);
+            JSONObject cur = new JSONObject(Net.get(url)).getJSONObject("current");
+            Store.putD(e, "aqi", cur.optDouble("us_aqi", Double.NaN));
+            st.append(", air ok");
+        } catch (Throwable t) {
+            Log.w(TAG, "air: " + t);
+            st.append(", air failed");
+        }
+        try {
             int idx = Tide.place(p, lat, lon);
             String url = String.format(Locale.US, "https://marine-api.open-meteo.com/v1/marine?latitude=%.3f&longitude=%.3f"
                     + "&hourly=sea_level_height_msl&timezone=auto&timeformat=unixtime&past_days=1&forecast_days=3",
@@ -179,6 +189,7 @@ final class Engine {
         try {
             ComplicationDataSourceUpdateRequester.create(ctx, new ComponentName(ctx, DataService.class)).requestUpdateAll();
             ComplicationDataSourceUpdateRequester.create(ctx, new ComponentName(ctx, TideGraphService.class)).requestUpdateAll();
+            ComplicationDataSourceUpdateRequester.create(ctx, new ComponentName(ctx, GlobeService.class)).requestUpdateAll();
         } catch (Throwable t) {
             Log.w(TAG, "update request: " + t);
         }
@@ -197,6 +208,18 @@ final class Engine {
             if (ms >= day0 && ms < day1) return ms;
         }
         return -1;
+    }
+
+    /** Today's sunrise and sunset (epoch ms), -1 when unknown. */
+    static long[] sunTimes(SharedPreferences p, long now) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(now);
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        long day0 = cal.getTimeInMillis(), day1 = day0 + 86_400_000L;
+        return new long[]{todayFrom(p.getString("sunrise", ""), day0, day1), todayFrom(p.getString("sunset", ""), day0, day1)};
     }
 
     /** All values, read fresh (sensors) where they change by the minute. Blocks ~1-3 s. */
@@ -231,6 +254,11 @@ final class Engine {
         }
         double feels = Store.d(p, "feels", Double.NaN);
         if (!Double.isNaN(feels)) v.put("feels", Math.round(feels) + "°");
+        double hum = Store.d(p, "hum", Double.NaN);
+        if (!Double.isNaN(hum)) v.put("hum", Math.round(hum) + "%");
+        double aqi = Store.d(p, "aqi", Double.NaN);
+        if (!Double.isNaN(aqi)) v.put("aqi", String.valueOf(Math.round(aqi)));
+        v.put("mage", String.format(Locale.US, "%.1f d", Astro.moonAge(now)));
 
         // pressure, elevation (today's max / min / climb), trend over ~3 h
         double hpa = Sensors.pressure(ctx);
@@ -271,6 +299,7 @@ final class Engine {
             Store.putD(e, "eLast", last);
             e.apply();
             v.put("elev", String.valueOf(Math.round(alt)));
+            v.put("alt", String.valueOf(Math.round(alt)));
             v.put("gain", "+" + Math.round(gain));
             v.put("emax", String.valueOf(Math.round(mx)));
             v.put("emin", String.valueOf(Math.round(mn)));
@@ -296,11 +325,11 @@ final class Engine {
             }
             double[] hi = s.next(ns, true), lo = s.next(ns, false);
             if (hi != null) {
-                v.put("hit", hm((long) hi[0] * 1000));
+                v.put("hit", hm((long) (hi[0] * 1000)));
                 v.put("hih", Tide.fmt(hi[1]));
             }
             if (lo != null) {
-                v.put("lot", hm((long) lo[0] * 1000));
+                v.put("lot", hm((long) (lo[0] * 1000)));
                 v.put("loh", Tide.fmt(lo[1]));
             }
         }

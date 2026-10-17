@@ -78,7 +78,7 @@ public class MainActivity extends Activity {
     private void build() {
         list.removeAllViews();
         text("Astro", 20, Color.rgb(95, 162, 245));
-        text("Feeds the Astro watch face", 12, Color.GRAY);
+        text("Feeds the Terra watch face", 12, Color.GRAY);
         status = text("", 12, Color.rgb(200, 205, 214));
         SharedPreferences p = Store.p(this);
         int idx = p.getInt("tideIdx", -1);
@@ -134,7 +134,9 @@ public class MainActivity extends Activity {
             if (!note.isEmpty()) sb.append(note).append('\n');
             sb.append("Sun ").append(v.get("srise")).append(" - ").append(v.get("sset"))
                     .append("  Moon ").append(v.get("mrise")).append(" - ").append(v.get("mset")).append('\n');
-            sb.append("Elev ").append(v.get("elev")).append(" m  Baro ").append(v.get("baro")).append(" hPa\n");
+            sb.append("Alt ").append(v.get("alt")).append(" m  Baro ").append(v.get("baro")).append(" hPa\n");
+            sb.append("Humidity ").append(v.get("hum")).append("  AQI ").append(v.get("aqi"))
+                    .append("  Moon ").append(v.get("mage")).append('\n');
             sb.append("Tide ").append(v.get("tplace")).append(' ').append(v.get("tnow")).append(" m ")
                     .append(v.get("tstate")).append('\n');
             sb.append("Heading ").append(v.get("head")).append(' ').append(v.get("hdir"));
