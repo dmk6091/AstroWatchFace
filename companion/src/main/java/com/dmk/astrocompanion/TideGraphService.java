@@ -39,8 +39,18 @@ public class TideGraphService extends ComplicationDataSourceService {
         }
     }
 
+    /** Sample curve for the complication picker (it hides sources that give no preview). */
     @Override
     public ComplicationData getPreviewData(ComplicationType type) {
-        return null;
+        if (type != ComplicationType.PHOTO_IMAGE) return null;
+        long now = System.currentTimeMillis();
+        long[] t = new long[73];
+        double[] h = new double[73];
+        long start = now / 1000 - 36 * 3600;
+        for (int i = 0; i < t.length; i++) {
+            t[i] = start + i * 3600L;
+            h[i] = 1.6 * Math.cos(2 * Math.PI * i / 12.42);  // two tides a day
+        }
+        return photo(Tide.graph(new Tide.Series(t, h), now));
     }
 }
