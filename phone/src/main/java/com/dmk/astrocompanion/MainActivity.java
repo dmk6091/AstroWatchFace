@@ -60,7 +60,7 @@ public class MainActivity extends Activity {
     private ScrollView scroll;
     private LinearLayout content, tabs;
     private int tab = 0;
-    private volatile boolean busy;
+    private volatile boolean busy, again;
     private volatile Bitmap globe;
     private volatile long globeAt;
 
@@ -155,7 +155,10 @@ public class MainActivity extends Activity {
 
     /** Location, then downloads when older than 15 min (or forced), then the globe. */
     private void refresh(boolean force) {
-        if (busy) return;
+        if (busy) {
+            again |= force;      // e.g. location was just allowed: run once more after this one
+            return;
+        }
         busy = true;
         render();
         new Thread(() -> {
@@ -179,7 +182,13 @@ public class MainActivity extends Activity {
                 latest = Installer.latest().build;
             } catch (Throwable ignored) {
             }
-            runOnUiThread(this::render);
+            runOnUiThread(() -> {
+                render();
+                if (again) {
+                    again = false;
+                    refresh(true);
+                }
+            });
         }).start();
     }
 
