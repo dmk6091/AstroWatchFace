@@ -51,7 +51,7 @@ public class TideGraphService extends ComplicationDataSourceService {
 
     static Icon jpeg(android.graphics.Bitmap b) {
         java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
-        b.compress(android.graphics.Bitmap.CompressFormat.JPEG, 88, out);
+        b.compress(android.graphics.Bitmap.CompressFormat.JPEG, 92, out);
         byte[] data = out.toByteArray();
         return Icon.createWithData(data, 0, data.length);
     }
