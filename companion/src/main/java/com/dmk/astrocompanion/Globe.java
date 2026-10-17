@@ -60,11 +60,13 @@ final class Globe {
     /** With the ISS (dot + 20 min trail + 10 min ahead) when its orbit is known. Cached 2 min. */
     static synchronized Bitmap render(Context ctx, double lat0, double lon0, long now, double sunFrac, Iss.Orbit iss) {
         if (sCache != null && now - sCacheAt < 2 * 60_000L) return sCache;
-        final int size = 300;
+        // The globe fills the whole round face; the day side is dimmed so the text on top reads well.
+        final int size = 450;
+        final double dim = 0.55;
         Bitmap bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
         if (!load(ctx)) return bmp;
         int[] px = new int[size * size];
-        double cx = size / 2.0, cy = size * 0.55, r = size * 0.39;
+        double cx = size / 2.0, cy = size / 2.0, r = size / 2.0;
         double[] ss = Astro.subsolar(now);
         double sd = ss[0], sl = ss[1];
         double p0 = lat0 * RAD, l0 = lon0 * RAD;
@@ -73,11 +75,7 @@ final class Globe {
             for (int x = 0; x < size; x++) {
                 double xn = (x + 0.5 - cx) / r, yn = (cy - y - 0.5) / r, rr = xn * xn + yn * yn;
                 if (rr > 1) {
-                    double rad = Math.sqrt(rr);
-                    if (rad < 1.08) {
-                        int a = (int) (120 * Math.pow(1 - (rad - 1) / 0.08, 2));
-                        px[y * size + x] = Color.argb(a, 90, 150, 255);
-                    }
+                    px[y * size + x] = Color.BLACK;   // outside the round screen
                     continue;
                 }
                 double rho = Math.sqrt(rr), c = Math.asin(Math.min(1, rho));
@@ -101,42 +99,32 @@ final class Globe {
                 double limb = 0.7 + 0.3 * Math.sqrt(Math.max(0, 1 - rr));
                 double dr = Color.red(dc), dg = Color.green(dc), db = Color.blue(dc);
                 double nr = dr * 0.07 + li * 0.9, ng = dg * 0.07 + li * 0.75, nb = db * 0.09 + li * 0.4;
-                int cr = (int) Math.min(255, (dr * shade * dayf + nr * (1 - dayf)) * limb);
-                int cg = (int) Math.min(255, (dg * shade * dayf + ng * (1 - dayf)) * limb);
-                int cb = (int) Math.min(255, (db * shade * dayf + nb * (1 - dayf)) * limb);
-                int a = (int) (255 * Math.min(1, (1 - Math.sqrt(rr)) * r));
-                px[y * size + x] = Color.argb(a, cr, cg, cb);
+                double k = dim * dayf + (1 - dayf);
+                int cr = (int) Math.min(255, (dr * shade * dayf + nr * (1 - dayf)) * limb * k);
+                int cg = (int) Math.min(255, (dg * shade * dayf + ng * (1 - dayf)) * limb * k);
+                int cb = (int) Math.min(255, (db * shade * dayf + nb * (1 - dayf)) * limb * k);
+                px[y * size + x] = Color.rgb(cr, cg, cb);
             }
         }
         bmp.setPixels(px, 0, size, 0, 0, size, size);
         Canvas cv = new Canvas(bmp);
-        Paint arc = new Paint(Paint.ANTI_ALIAS_FLAG);
-        arc.setStyle(Paint.Style.STROKE);
-        float ar = (float) (r * 1.22);
-        RectF box = new RectF((float) cx - ar, (float) cy - ar, (float) cx + ar, (float) cy + ar);
-        arc.setStrokeWidth(2f);
-        arc.setColor(Color.argb(160, 80, 110, 170));
-        cv.drawArc(box, 180, 180, false, arc);
-        if (!Double.isNaN(sunFrac) && sunFrac >= 0 && sunFrac <= 1) {
-            arc.setStrokeWidth(3f);
-            arc.setColor(Color.argb(230, 242, 179, 61));
-            cv.drawArc(box, 180, (float) (180 * sunFrac), false, arc);
-            double a = Math.PI * (1 - sunFrac);
-            float sx = (float) (cx + ar * Math.cos(a)), sy = (float) (cy - ar * Math.sin(a));
+        // the sun: a soft glow over the place where it is straight overhead (when on our side)
+        float[] sp = project(sd / RAD, sl / RAD, lat0, lon0, cx, cy, r);
+        if (sp != null) {
             Paint sun = new Paint(Paint.ANTI_ALIAS_FLAG);
-            sun.setColor(Color.argb(40, 255, 200, 80));
-            cv.drawCircle(sx, sy, 11, sun);
-            sun.setColor(Color.argb(90, 255, 200, 80));
-            cv.drawCircle(sx, sy, 8, sun);
+            sun.setColor(Color.argb(35, 255, 200, 80));
+            cv.drawCircle(sp[0], sp[1], 18, sun);
+            sun.setColor(Color.argb(80, 255, 200, 80));
+            cv.drawCircle(sp[0], sp[1], 11, sun);
             sun.setColor(Color.rgb(255, 200, 80));
-            cv.drawCircle(sx, sy, 5.5f, sun);
+            cv.drawCircle(sp[0], sp[1], 6, sun);
         }
         if (iss != null) drawIss(cv, iss, now, lat0, lon0, cx, cy, r);
         Paint me = new Paint(Paint.ANTI_ALIAS_FLAG);
         me.setStyle(Paint.Style.STROKE);
-        me.setStrokeWidth(2f);
+        me.setStrokeWidth(2.5f);
         me.setColor(Color.rgb(255, 140, 60));
-        cv.drawCircle((float) cx, (float) cy, 4, me);
+        cv.drawCircle((float) cx, (float) cy, 5, me);
         sCache = bmp;
         sCacheAt = now;
         return bmp;

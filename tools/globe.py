@@ -12,10 +12,10 @@ def subsolar(ms):
     a=ra(L,0); de=dec(L,0); gmst=RAD*(280.16+360.9856235*d)
     lon=(a-gmst+math.pi)%(2*math.pi)-math.pi
     return de, lon
-def render(lat0,lon0,ms,size=300,sunfrac=None,day=None,night=None,lit_all=False):
+def render(lat0,lon0,ms,size=300,sunfrac=None,day=None,night=None,lit_all=False,full=False,dim=1.0):
     W=size; im=Image.new('RGBA',(W,W),(0,0,0,0)); px=im.load()
     dw,dh=day.size; dp=day.load(); npx=night.load()
-    cx,cy,R=W/2, W*0.55, W*0.39
+    cx,cy,R=(W/2, W/2, W/2) if full else (W/2, W*0.55, W*0.39)
     sd,sl=subsolar(ms)
     p0=lat0*RAD; l0=lon0*RAD
     for y in range(W):
@@ -41,11 +41,16 @@ def render(lat0,lon0,ms,size=300,sunfrac=None,day=None,night=None,lit_all=False)
             limb=0.7+0.3*math.sqrt(max(0,1-rr))
             nr=(r_*0.07+li*0.9*1.0, g_*0.07+li*0.75, b_*0.09+li*0.4)
             dr=(r_*shade,g_*shade,b_*shade)
-            col=[ (dr[i]*dayf+nr[i]*(1-dayf))*limb for i in range(3)]
+            # dim the day side (text sits on top); the night side is already dark
+            k=dim*dayf+(1-dayf)
+            col=[ (dr[i]*dayf+nr[i]*(1-dayf))*limb*k for i in range(3)]
             edge=min(1,(1-math.sqrt(rr))*R)
             px[x,y]=(min(255,int(col[0])),min(255,int(col[1])),min(255,int(col[2])),int(255*edge))
     d=ImageDraw.Draw(im)
     if lit_all:
+        return im
+    if full:
+        d.ellipse((cx-5,cy-5,cx+5,cy+5),outline=(255,140,60,255),width=2)
         return im
     # sky arc: sunrise (left/east) .. sunset (right/west) over the globe
     ar=R*1.22

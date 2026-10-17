@@ -178,7 +178,8 @@ for i, k in enumerate(WX):
 
 
 # ---------------------------------------------------------------- layout (450 x 450 face units)
-GLOBE = (225, 262, 172)            # centre x, centre y, slot size (square); the globe image is 300 px
+GLOBE = (225, 225, 450)            # the globe fills the whole round face (image 450 px)
+GLOBE_DIM = 0.55                   # day side dimmed so the text on top stays readable
 GRAPH = (118, 372, 214, 32)        # tide graph slot: x, y, w, h  (image 428 x 64)
 
 
@@ -211,13 +212,13 @@ def P(x, y):
     return (x * SS, y * SS)
 
 
-# faint orbit rings around the globe
 gx, gy, gs = GLOBE
-for rr, a in ((gs * 0.56, 60),):
-    d.ellipse((P(gx - rr, gy - rr) + P(gx + rr, gy + rr)), outline=(80, 120, 190, a), width=SS)
+# Icons, labels and dividers go on a see-through layer drawn ABOVE the globe.
+fg = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+d = ImageDraw.Draw(fg)
 # thin dividers
-d.line(P(60, 160) + P(390, 160), fill=(60, 80, 115, 255), width=SS)
-d.line(P(110, 352) + P(340, 352), fill=(60, 80, 115, 160), width=SS)
+d.line(P(60, 160) + P(390, 160), fill=(150, 175, 215, 200), width=SS)
+d.line(P(110, 352) + P(340, 352), fill=(150, 175, 215, 140), width=SS)
 
 
 def label(text, x, y, size, color, font='barlow_sc_semibold', anchor='mm'):
@@ -227,7 +228,7 @@ def label(text, x, y, size, color, font='barlow_sc_semibold', anchor='mm'):
 def icon(img, x, y, size):
     sz = int(size * SS)
     im = img.resize((sz, sz), Image.LANCZOS)
-    bg.alpha_composite(im, (int(x * SS - sz / 2), int(y * SS - sz / 2)))
+    fg.alpha_composite(im, (int(x * SS - sz / 2), int(y * SS - sz / 2)))
 
 
 def canvas(n=200):
@@ -321,11 +322,13 @@ label('AQI', 72, 335, 12, GREEN, anchor='lm')
 # fallback globe (shown until the companion sends the live one): daylit Earth over India
 _day = Image.open(os.path.join(HERE, 'textures', 'earth_day.jpg')).convert('RGB')
 _night = Image.open(os.path.join(HERE, 'textures', 'earth_night.jpg')).convert('L')
-_g = globe.render(18.62, 73.8, 1792213200000, size=300, sunfrac=None, day=_day, night=_night, lit_all=True)
-_g = _g.resize((int(gs * SS), int(gs * SS)), Image.LANCZOS)
-bg.alpha_composite(_g, (int((gx - gs / 2) * SS), int((gy - gs / 2) * SS)))
+_g = globe.render(18.62, 73.8, 1792213200000, size=W, sunfrac=None, day=_day, night=_night, lit_all=True,
+                  full=True, dim=GLOBE_DIM)
+_g = _g.resize((S, S), Image.LANCZOS)
+bg.alpha_composite(_g, (0, 0))
 
 bg = bg.resize((W, W), Image.LANCZOS)
+fg.resize((W, W), Image.LANCZOS).save(os.path.join(RES, 'drawable-nodpi', 'fg.png'), optimize=True)
 cm = Image.new('L', (W, W), 0)
 ImageDraw.Draw(cm).ellipse((0, 0, W - 1, W - 1), fill=255)
 out_bg = Image.new('RGBA', (W, W), (0, 0, 0, 255))
@@ -523,12 +526,17 @@ xml = ['<?xml version="1.0" encoding="UTF-8"?>',
        '<BitmapFonts>', bitmap_font('wx_day', 'wx_d_', 16, 96), bitmap_font('wx_night', 'wx_n_', 16, 96),
        '</BitmapFonts>',
        '<Scene backgroundColor="#FF000000">',
-       '<Group name="active" x="0" y="0" width="450" height="450">',
+       '<Group name="back" x="0" y="0" width="450" height="450">',
        '<Variant mode="AMBIENT" target="alpha" value="0"/>',
        '<PartImage x="0" y="0" width="450" height="450"><Image resource="bg"/></PartImage>',
+       '</Group>',
+       globe_slot,
+       '<Group name="active" x="0" y="0" width="450" height="450">',
+       '<Variant mode="AMBIENT" target="alpha" value="0"/>',
+       '<PartImage x="0" y="0" width="450" height="450"><Image resource="fg"/></PartImage>',
        ''.join(parts), battery, clock,
        '</Group>',
-       globe_slot, graph_slot, data_slot,
+       graph_slot, data_slot,
        '<Group name="ambient" x="0" y="0" width="450" height="450" alpha="0">',
        '<Variant mode="AMBIENT" target="alpha" value="255"/>',
        AMB, amb_clock.replace('y="92"', 'y="120"'),
@@ -559,9 +567,10 @@ if os.path.isdir(spec_dir):
 
 # ---------------------------------------------------------------- preview
 prev = out_bg.copy()
-live = globe.render(18.62, 73.8, 1792210000000, size=300, sunfrac=0.18, day=_day, night=_night)
-live = live.resize((gs, gs), Image.LANCZOS)
-prev.alpha_composite(live, (int(gx - gs / 2), int(gy - gs / 2)))
+live = globe.render(18.62, 73.8, 1792210000000, size=W, sunfrac=0.18, day=_day, night=_night, full=True,
+                    dim=GLOBE_DIM)
+prev.alpha_composite(live, (0, 0))
+prev.alpha_composite(Image.open(os.path.join(RES, 'drawable-nodpi', 'fg.png')).convert('RGBA'), (0, 0))
 pd = ImageDraw.Draw(prev)
 gxx, gyy, gw, gh = GRAPH
 pts = [(gxx + 4 + i * (gw - 8) / 60, gyy + gh / 2 - (gh / 2 - 4) * math.cos(2 * math.pi * i / 60 * 1.9 + 0.6))

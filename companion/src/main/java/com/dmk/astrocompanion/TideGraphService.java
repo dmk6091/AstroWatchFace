@@ -31,6 +31,23 @@ public class TideGraphService extends ComplicationDataSourceService {
                 new SmallImage.Builder(Icon.createWithBitmap(b), SmallImageType.PHOTO).build(), desc).build();
     }
 
+    /** Same, from an already compressed picture (big images: a raw bitmap is too large to send). */
+    static ComplicationData image(ComplicationType type, Icon icon, String what) {
+        PlainComplicationText desc = new PlainComplicationText.Builder(what).build();
+        if (type == ComplicationType.PHOTO_IMAGE) {
+            return new PhotoImageComplicationData.Builder(icon, desc).build();
+        }
+        return new SmallImageComplicationData.Builder(
+                new SmallImage.Builder(icon, SmallImageType.PHOTO).build(), desc).build();
+    }
+
+    static Icon jpeg(android.graphics.Bitmap b) {
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        b.compress(android.graphics.Bitmap.CompressFormat.JPEG, 88, out);
+        byte[] data = out.toByteArray();
+        return Icon.createWithData(data, 0, data.length);
+    }
+
     static boolean ours(ComplicationType t) {
         return t == ComplicationType.SMALL_IMAGE || t == ComplicationType.PHOTO_IMAGE;
     }
