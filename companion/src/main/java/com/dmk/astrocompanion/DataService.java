@@ -23,7 +23,7 @@ public class DataService extends ComplicationDataSourceService {
         LongTextComplicationData.Builder b = new LongTextComplicationData.Builder(
                 new PlainComplicationText.Builder(s).build(),
                 new PlainComplicationText.Builder("Astro data").build());
-        if (tap != null) b.setTapAction(tap);   // tap on the ISS line: open Astro
+        if (tap != null) b.setTapAction(tap);   // the bottom panel's slot: a tap shows the next screen
         return b.build();
     }
 
@@ -36,7 +36,7 @@ public class DataService extends ComplicationDataSourceService {
                 if (request.getComplicationType() != ComplicationType.LONG_TEXT) {
                     data = new NoDataComplicationData();
                 } else {
-                    data = text(Engine.pack(Engine.values(this)), Panel.openApp(this));
+                    data = text(Engine.pack(Engine.values(this)), Panel.tap(this));
                 }
             } catch (Throwable t) {
                 Log.w(Engine.TAG, "data: " + t);

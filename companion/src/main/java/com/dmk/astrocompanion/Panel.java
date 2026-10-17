@@ -33,12 +33,6 @@ public class Panel extends BroadcastReceiver {
         return PendingIntent.getBroadcast(c, 7, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
-    /** Opens the Astro app (tap on the globe centre or the ISS line). */
-    static PendingIntent openApp(Context c) {
-        Intent i = new Intent(c, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        return PendingIntent.getActivity(c, 8, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-    }
-
     @Override
     public void onReceive(Context c, Intent in) {
         SharedPreferences p = Store.p(c);

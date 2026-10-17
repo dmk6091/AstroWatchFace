@@ -457,7 +457,8 @@ parts.append(MOON)
 parts.append(T(358, 238, '%s%s', [ILLUM, '"%"'], size=21, color=WHITE, width=80))
 
 # ---- companion values: one LONG_TEXT, fixed-width fields cut out with subText
-FIELDS, COMP, EMPTY = [], [], []
+FIELDS, COMP, EMPTY = [], [], []      # top / middle values (slot 3)
+BOTTOM, EMPTY_B = [], []               # bottom panel + ISS line (slot 0: lowest id, so it gets the taps)
 
 
 def D(x, y, name, width, template, size, color, align='CENTER', w=None, font='barlow_sc_semibold', sample='',
@@ -468,10 +469,10 @@ def D(x, y, name, width, template, size, color, align='CENTER', w=None, font='ba
     expr = 'subText([COMPLICATION.TEXT], %d, %d)' % (start, start + width)
     SAMPLES[expr] = sample
     (COMP if to is None else to).append(T(x, y, template, [expr], size=size, color=color, font=font, align=align,
-                                          width=w, preview=(to is None or to is PANEL['tide'])))
-    if to is None or to is PANEL['tide']:
-        EMPTY.append(T(x, y, template, ['"%s"' % empty], size=size, color=color, font=font, align=align, width=w,
-                       preview=False))
+                                          width=w, preview=(to is None or to is BOTTOM or to is PANEL['tide'])))
+    if to is None or to is BOTTOM or to is PANEL['tide']:
+        (EMPTY if to is None else EMPTY_B).append(T(x, y, template, ['"%s"' % empty], size=size, color=color,
+                                                     font=font, align=align, width=w, preview=False))
 
 
 # bottom panel: three screens (tide / quakes / rain), the companion picks one, a tap goes to the next
@@ -493,7 +494,7 @@ D(250, 365, 'tnow', 5, '%s m', 17, WHITE, 'CENTER', 70, sample='1.8', to=TP)
 D(330, 365, 'tstate', 7, '%s', 14, '#5BA8F2', 'END', 70, sample='RISING', empty='', to=TP)
 D(172, 418, 'hit', 5, 'HIGH %s', 15, SOFT, 'CENTER', 100, sample='14:32', empty='--:--', to=TP)
 D(282, 418, 'lot', 5, 'LOW %s', 15, SOFT, 'CENTER', 100, sample='21:48', empty='--:--', to=TP)
-D(225, 438, 'iss', 10, 'ISS %s', 14, ICE, 'CENTER', 130, sample='19:42 58°', empty='--')
+D(225, 438, 'iss', 10, 'ISS %s', 14, ICE, 'CENTER', 130, sample='19:42 58°', empty='--', to=BOTTOM)
 # quakes: strongest of the last 24 h, how long ago, how many, nearest to you
 D(110, 365, 'qmag', 5, '%s', 17, QRED, 'START', 44, to=QP)
 D(148, 365, 'qplace', 16, '%s', 15, WHITE, 'START', 140, to=QP)
@@ -531,19 +532,31 @@ panel_group = ('<Group name="panel" x="0" y="0" width="450" height="450"><Condit
                '</Expressions><Compare expression="pq">%s</Compare><Compare expression="pr">%s</Compare>'
                '<Default>%s</Default></Condition></Group>') % (TOTAL + 2, TOTAL + 3, ''.join(PANEL['quake']),
                                                                 ''.join(PANEL['rain']), ''.join(PANEL['tide']))
-COMP.append(panel_group)
-EMPTY.insert(0, pimg('ic_wave', 92 - 11, 365 - 11, 22, 22) + pimg('dots_0', 205, 347, 40, 10))
+BOTTOM.append(panel_group)
+EMPTY_B.insert(0, pimg('ic_wave', 92 - 11, 365 - 11, 22, 22) + pimg('dots_0', 205, 347, 40, 10))
 
-data_slot = ('<ComplicationSlot x="0" y="0" width="450" height="450" slotId="0" displayName="Astro data" '
-             'supportedTypes="LONG_TEXT EMPTY" isCustomizable="TRUE">'
-             '<DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="EMPTY" '
-             'primaryProvider="com.dmk.astrocompanion/com.dmk.astrocompanion.DataService" '
-             'primaryProviderType="LONG_TEXT"/>'
-             '<BoundingBox x="150" y="428" width="150" height="20"/>'
-             '<Complication type="LONG_TEXT">%s</Complication>'
-             '<Complication type="EMPTY">%s</Complication>'
-             '<Variant mode="AMBIENT" target="alpha" value="0"/>'
-             '</ComplicationSlot>') % (''.join(COMP), ''.join(EMPTY))
+# The renderer draws a slot only inside its bounding area, and a tap goes to the slot with the lowest id
+# among those under the finger. So the companion's text feeds two slots:
+#   slot 3: everything above the bottom panel (no taps of its own: the globe, id 1, is lower)
+#   slot 0: the bottom panel + ISS line; lowest id, so a tap there always reaches it (next screen)
+SPLIT = 344
+
+
+def data_slot_xml(slot_id, name, top, height, comp, empty):
+    return ('<ComplicationSlot x="0" y="0" width="450" height="450" slotId="%d" displayName="%s" '
+            'supportedTypes="LONG_TEXT EMPTY" isCustomizable="TRUE">'
+            '<DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="EMPTY" '
+            'primaryProvider="com.dmk.astrocompanion/com.dmk.astrocompanion.DataService" '
+            'primaryProviderType="LONG_TEXT"/>'
+            '<BoundingBox x="0" y="%d" width="450" height="%d"/>'
+            '<Complication type="LONG_TEXT">%s</Complication>'
+            '<Complication type="EMPTY">%s</Complication>'
+            '<Variant mode="AMBIENT" target="alpha" value="0"/>'
+            '</ComplicationSlot>') % (slot_id, name, top, height, ''.join(comp), ''.join(empty))
+
+
+data_slot = data_slot_xml(3, 'Astro data', 0, SPLIT, COMP, EMPTY)
+panel_slot = data_slot_xml(0, 'Astro panel', SPLIT, 450 - SPLIT, BOTTOM, EMPTY_B)
 
 
 def image_slot(slot_id, name, provider, x, y, w, h, bound=None, img_at=None):
@@ -564,13 +577,9 @@ def image_slot(slot_id, name, provider, x, y, w, h, bound=None, img_at=None):
                                       img % 'PHOTO_IMAGE')
 
 
-# globe: tap the centre (you) to open Astro
-globe_slot = image_slot(1, 'Astro globe', 'GlobeService', gx - gs / 2, gy - gs / 2, gs, gs,
-                        bound=(gs / 2 - 40, gs / 2 - 40, 80, 80))
-# bottom panel: the whole panel is the tap area (next screen), the picture sits in the graph strip
-PX, PY, PW, PH = 80, 356, 290, 72
-graph_slot = image_slot(2, 'Astro panel', 'TideGraphService', PX, PY, PW, PH,
-                        img_at=(GRAPH[0] - PX, GRAPH[1] - PY, GRAPH[2], GRAPH[3]))
+# globe: whole face (drawn only inside its bounding area)
+globe_slot = image_slot(1, 'Astro globe', 'GlobeService', gx - gs / 2, gy - gs / 2, gs, gs)
+graph_slot = image_slot(2, 'Astro panel picture', 'TideGraphService', *GRAPH)
 
 
 # battery: very thin ring around the edge, clockwise from 12 o'clock, red at 20 % or less
@@ -623,7 +632,7 @@ xml = ['<?xml version="1.0" encoding="UTF-8"?>',
        '<PartImage x="0" y="0" width="450" height="450"><Image resource="fg"/></PartImage>',
        ''.join(parts), battery, clock,
        '</Group>',
-       graph_slot, data_slot,
+       graph_slot, panel_slot, data_slot,
        '<Group name="ambient" x="0" y="0" width="450" height="450" alpha="0">',
        '<Variant mode="AMBIENT" target="alpha" value="255"/>',
        AMB, amb_clock.replace('y="92"', 'y="120"'),

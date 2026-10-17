@@ -35,8 +35,7 @@ public class GlobeService extends ComplicationDataSourceService {
                     long now = System.currentTimeMillis();
                     double lat = Store.d(p, "lat", Engine.FALLBACK_LAT), lon = Store.d(p, "lon", Engine.FALLBACK_LON);
                     data = TideGraphService.image(type, TideGraphService.jpeg(
-                            Globe.render(this, lat, lon, now, sunFrac(p, now), Iss.orbit(p))), "Earth",
-                            Panel.openApp(this));
+                            Globe.render(this, lat, lon, now, sunFrac(p, now), Iss.orbit(p))), "Earth");
                 }
             } catch (Throwable t) {
                 Log.w(Engine.TAG, "globe: " + t);
