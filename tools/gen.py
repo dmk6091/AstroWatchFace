@@ -246,8 +246,6 @@ label('LOW', 502, 836, 10, TIDE)
 label('ISS', 228, 766, 11.5, WHITE, anchor='lm')
 label('W', 490, 1013, 9, GREY)
 label('E', 754, 1013, 9, '#7FA6D8')
-for txt, yv in (('2.0', 673), ('1.0', 709), ('0', 745)):
-    label(txt, 416, yv, 8, DIM, anchor='rm')
 for txt, xv in (('00', 436), ('06', 535), ('12', 634), ('18', 734), ('24', 832)):
     label(txt, xv, 770, 8, DIM)
 
@@ -592,7 +590,7 @@ SAMPLES = {}  # expression -> sample text for the preview image
 
 
 def T(rx, ry, template, params=(), size=12, color=WHITE, font='barlow_sc_semibold', align='CENTER', width=None,
-      launch=None):
+      launch=None, preview=True):
     """Text centred vertically on ref (rx, ry); for START/END, rx is the left/right edge."""
     if not params:
         params, template = ['"%s"' % template], '%s'
@@ -607,7 +605,7 @@ def T(rx, ry, template, params=(), size=12, color=WHITE, font='barlow_sc_semibol
         else:
             vals = None
             break
-    if vals is not None:
+    if vals is not None and preview:
         PREVIEW.append((rx, ry, template.replace('%s', '{}').format(*vals), size, color, font, align, width))
     fx, fy = mx(rx), my(ry)
     h = size * 1.45
@@ -663,8 +661,6 @@ for i in range(27):
 cond.append('<Default>%s</Default></Condition></Group>' % moon_img_el(27))
 parts.append(''.join(cond))
 AMB_MOON = ''.join(cond).replace('<Group name="moon"', '<Group name="moon2"')
-parts.append(T(425, 241, '%s', ['"--:--"'], size=15.5, color=WHITE, align='START', width=60))
-parts.append(T(425, 284, '%s', ['"--:--"'], size=15.5, color=WHITE, align='START', width=60))
 parts.append(T(800, 231, '%s', [ILLUM], size=15, color='#6FA8F5', align='END', width=50))
 parts.append(T(802, 231, '%s', ['"%"'], size=15, color='#6FA8F5', align='START', width=20))
 parts.append(T(790, 262, '%s', [by_type(PH1)], size=12.5, color='#C9CED6'))
@@ -673,8 +669,6 @@ parts.append(T(790, 298, '%s', [by_type(PH2)], size=12.5, color='#C9CED6'))
 parts.append(T(536, 371, '%s', [DOW], size=17, color='#5FA2F5', font='barlow_semibold', launch='CALENDAR'))
 parts.append(T(690, 371, '%s %s', ['[DAY]', MON], size=17, color='#E9ECF1', font='barlow_medium', launch='CALENDAR'))
 # sunrise / sunset (companion app)
-parts.append(T(527, 546, '%s', ['"--:--"'], size=15, color=WHITE, align='START', width=60))
-parts.append(T(702, 546, '%s', ['"--:--"'], size=15, color=WHITE, align='START', width=60))
 # weather
 WXAVAIL = '[WEATHER.IS_AVAILABLE]'
 wx_icon = ('<Group name="wx_icon" x="%.1f" y="%.1f" width="%.1f" height="%.1f"><Condition><Expressions>'
@@ -697,7 +691,6 @@ LO = '[WEATHER.IS_AVAILABLE] ? round([WEATHER.DAY_TEMPERATURE_LOW]) : "--"'
 RAIN = '[WEATHER.IS_AVAILABLE] ? round([WEATHER.CHANCE_OF_PRECIPITATION]) : "--"'
 HR = '[HEART_RATE] > 0 ? [HEART_RATE] : "--"'
 SAMPLES.update({HI: '31', LO: '24', RAIN: '20', '[STEP_COUNT]': '6,240', HR: '72'})
-parts.append(T(284, 510, 'H %s°  L %s°', [HI, LO], size=14.5, color=GREY))
 parts.append(T(222, 563, '%s%s', [RAIN, '"%"'], size=20, color=WHITE, align='START', width=70))
 parts.append(T(220, 613, '%s', ['[STEP_COUNT]'], size=18, color=WHITE, align='START', width=80))
 parts.append(T(220, 655, '%s bpm', [HR], size=18, color=WHITE, align='START', width=80, launch='HEALTH_HEART_RATE'))
@@ -707,32 +700,16 @@ parts.append(T(286, 838, '%s', ['"--"'], size=14.5, color=WHITE))
 parts.append(T(318, 869, '%s', ['"--°"'], size=14.5, color=WHITE))
 parts.append(T(325, 907, '%s', ['"--:--"'], size=14.5, color=WHITE))
 # elevation / baro — companion app
-parts.append(T(946, 446, '%s m', ['"----"'], size=25, color=WHITE, font='barlow_medium'))
-parts.append(T(946, 495, '+%s m', ['"--"'], size=15.5, color=GREEN))
-parts.append(T(1058, 543, '%s m', ['"--"'], size=13, color=GREEN, align='END', width=60))
-parts.append(T(1058, 571, '%s m', ['"--"'], size=13, color=GREEN, align='END', width=60))
-parts.append(T(908, 657, '%s hPa', ['"----"'], size=16.5, color=WHITE, align='START', width=90))
 # deep sky — build 3
 parts.append(T(972, 756, 'M31', [], size=14, color=WHITE))
 parts.append(T(972, 789, 'Andromeda', [], size=13.5, color='#C9CED6'))
 parts.append(T(912, 907, '%s', ['"--:--"'], size=14.5, color=WHITE))
 # tide — companion app
-parts.append(T(640, 600, 'MUMBAI', [], size=11, color='#C9CED6', align='START', width=90))
-parts.append(T(522, 645, '%s m', ['"--"'], size=23, color=WHITE, font='barlow_medium'))
-parts.append(T(710, 644, '%s', ['"-- "'], size=15, color=TIDE))
-parts.append(T(599, 804, '%s', ['"--:--"'], size=13.5, color=TIDE))
-parts.append(T(683, 804, '%s m', ['"--"'], size=13.5, color=TIDE))
-parts.append(T(599, 836, '%s', ['"--:--"'], size=13.5, color=TIDE))
-parts.append(T(683, 836, '%s m', ['"--"'], size=13.5, color=TIDE))
 # sun
-parts.append(T(482, 963, '%s', ['"--°"'], size=16.5, color=WHITE))
 parts.append(T(621, 954, '%s', ['%s ? round([WEATHER.UV_INDEX]) : "-"' % WXAVAIL], size=24, color=ORANGE,
                font='barlow_medium'))
 parts.append(T(621, 989, '%s', ['%s ? %s : ""' % (WXAVAIL, UVL)], size=10.5, color='#D9DDE3'))
-parts.append(T(768, 963, '%s', ['"--h --m"'], size=16.5, color=WHITE))
 # compass — companion app
-parts.append(T(627, 1042, '%s', ['"---°"'], size=16, color=WHITE, font='barlow_medium'))
-parts.append(T(627, 1067, '%s', ['"--"'], size=9.5, color=WHITE))
 
 # clock
 tx, ty, tw, th = mx(440), my(460) - ms(150) / 2, mx(815) - mx(440), ms(150)
@@ -756,6 +733,92 @@ def bitmap_font(name, prefix, count, size):
     out.append('</BitmapFont>')
     return ''.join(out)
 
+
+# ---------------------------------------------------------------- companion data
+# One LONG_TEXT complication from the Astro companion app carries every value, in fixed-width
+# fields (the face cuts them out with subText). FIELDS is the shared spec: the generator also
+# writes it into the companion app's FieldSpec.java, so both sides always agree.
+FIELDS = []  # (name, width, align)
+COMP, EMPTY = [], []
+
+
+def D(rx, ry, name, width, template, size, color, align='CENTER', w=None, font='barlow_sc_semibold',
+      sample='', empty='--'):
+    start = sum(f[1] for f in FIELDS)
+    FIELDS.append((name, width, {'START': 'L', 'END': 'R', 'CENTER': 'C'}[align]))
+    expr = 'subText([COMPLICATION.TEXT], %d, %d)' % (start, start + width)
+    SAMPLES[expr] = sample
+    COMP.append(T(rx, ry, template, [expr], size=size, color=color, font=font, align=align, width=w))
+    EMPTY.append(T(rx, ry, template, ['"%s"' % empty], size=size, color=color, font=font, align=align, width=w,
+                   preview=False))
+
+
+D(425, 241, 'mrise', 5, '%s', 15.5, WHITE, 'START', 60, sample='12:45', empty='--:--')
+D(425, 284, 'mset', 5, '%s', 15.5, WHITE, 'START', 60, sample='23:32', empty='--:--')
+D(527, 546, 'srise', 5, '%s', 15, WHITE, 'START', 60, sample='06:18', empty='--:--')
+D(702, 546, 'sset', 5, '%s', 15, WHITE, 'START', 60, sample='18:24', empty='--:--')
+D(284, 510, 'feels', 4, 'Feels %s', 14.5, GREY, sample='31°')
+D(946, 446, 'elev', 5, '%s m', 25, WHITE, font='barlow_medium', sample='560')
+D(946, 495, 'gain', 5, '%s m', 15.5, GREEN, sample='+128')
+D(1058, 543, 'emax', 5, '%s m', 13, GREEN, 'END', 60, sample='602')
+D(1058, 571, 'emin', 5, '%s m', 13, GREEN, 'END', 60, sample='548')
+D(908, 657, 'baro', 5, '%s hPa', 16.5, WHITE, 'START', 90, sample='1008', empty='----')
+D(1062, 623, 'btrend', 4, '%s', 11, GREY, 'END', 40, sample='+1.2', empty='')
+D(640, 600, 'tplace', 10, '%s', 11, '#C9CED6', 'START', 90, sample='MUMBAI', empty='')
+D(522, 645, 'tnow', 5, '%s m', 23, WHITE, font='barlow_medium', sample='1.8')
+D(710, 644, 'tstate', 7, '%s', 15, TIDE, sample='RISING', empty='')
+D(599, 804, 'hit', 5, '%s', 13.5, TIDE, sample='14:32', empty='--:--')
+D(683, 804, 'hih', 5, '%s m', 13.5, TIDE, sample='2.3')
+D(599, 836, 'lot', 5, '%s', 13.5, TIDE, sample='21:48', empty='--:--')
+D(683, 836, 'loh', 5, '%s m', 13.5, TIDE, sample='0.4')
+D(482, 963, 'az', 7, '%s', 16.5, WHITE, sample='103° E', empty='--°')
+D(768, 963, 'dlen', 8, '%s', 16.5, WHITE, sample='12h 06m', empty='--h --m')
+D(627, 1042, 'head', 4, '%s', 16, WHITE, font='barlow_medium', sample='312°', empty='---°')
+D(627, 1067, 'hdir', 3, '%s', 9.5, WHITE, sample='NW')
+# without the companion, the feels-like row shows today's high / low from the watch
+EMPTY.append(T(284, 510, 'H %s°  L %s°', [HI, LO], size=14.5, color=GREY, preview=False))
+
+data_slot = ('<ComplicationSlot x="0" y="0" width="450" height="450" slotId="0" displayName="Astro data" '
+             'supportedTypes="LONG_TEXT EMPTY" isCustomizable="TRUE">'
+             '<DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="EMPTY" '
+             'primaryProvider="com.dmk.astrocompanion/com.dmk.astrocompanion.DataService" '
+             'primaryProviderType="LONG_TEXT"/>'
+             '<BoundingBox x="%d" y="%d" width="%d" height="%d"/>'
+             '<Complication type="LONG_TEXT">%s</Complication>'
+             '<Complication type="EMPTY">%s</Complication>'
+             '<Variant mode="AMBIENT" target="alpha" value="0"/>'
+             '</ComplicationSlot>') % (round(mx(410)), round(my(880)), round(mx(845) - mx(410)),
+                                       round(my(1000) - my(880)), ''.join(COMP), ''.join(EMPTY))
+gx, gy = mx(398), my(664)
+gw, gh = mx(842) - gx, my(758) - gy
+graph_slot = ('<ComplicationSlot x="%d" y="%d" width="%d" height="%d" slotId="1" displayName="Tide graph" '
+              'supportedTypes="PHOTO_IMAGE EMPTY" isCustomizable="TRUE">'
+              '<DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="EMPTY" '
+              'primaryProvider="com.dmk.astrocompanion/com.dmk.astrocompanion.TideGraphService" '
+              'primaryProviderType="PHOTO_IMAGE"/>'
+              '<BoundingBox x="0" y="0" width="%d" height="%d"/>'
+              '<Complication type="PHOTO_IMAGE"><PartImage x="0" y="0" width="%d" height="%d">'
+              '<Image resource="[COMPLICATION.PHOTO_IMAGE]"/></PartImage></Complication>'
+              '<Variant mode="AMBIENT" target="alpha" value="0"/>'
+              '</ComplicationSlot>') % (round(gx), round(gy), round(gw), round(gh), round(gw), round(gh),
+                                        round(gw), round(gh))
+
+# FieldSpec.java for the companion
+spec_dir = os.path.join(os.path.dirname(OUT.rstrip('/')), '..', '..', 'companion', 'src', 'main', 'java', 'com',
+                        'dmk', 'astrocompanion')
+if os.path.isdir(os.path.dirname(os.path.dirname(spec_dir))):
+    os.makedirs(spec_dir, exist_ok=True)
+    with open(os.path.join(spec_dir, 'FieldSpec.java'), 'w') as f:
+        f.write('package com.dmk.astrocompanion;\n\n'
+                '/** Generated by tools/gen.py: the watch face cuts these fixed-width fields out of the text. */\n'
+                'final class FieldSpec {\n'
+                '    static final String[] NAMES = {%s};\n'
+                '    static final int[] WIDTHS = {%s};\n'
+                '    /** L = left aligned (pad right), R = right aligned, C = centred. */\n'
+                '    static final String ALIGN = "%s";\n\n'
+                '    private FieldSpec() {}\n}\n' % (
+                    ', '.join('"%s"' % f[0] for f in FIELDS), ', '.join(str(f[1]) for f in FIELDS),
+                    ''.join(f[2] for f in FIELDS)))
 
 # battery: thin ring along the left edge, 225° (bottom-left) up to 315° (top-left) at 100 %
 def arc_draw(start, end, color, thick, expr=None, launch=None, d=432):
@@ -796,6 +859,8 @@ xml = ['<?xml version="1.0" encoding="UTF-8"?>',
        ampm_hide,
        battery,
        '</Group>',
+       data_slot,
+       graph_slot,
        # ambient: only date + time, dimmed
        '<Group name="ambient" x="0" y="0" width="450" height="450" alpha="0">',
        '<Variant mode="AMBIENT" target="alpha" value="255"/>',

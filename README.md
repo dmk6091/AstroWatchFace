@@ -9,6 +9,11 @@ astronomy / outdoor concept: moon phase, weather, elevation, tide, ISS, deep-sky
 * Every push builds on GitHub Actions, validates the XML with Google's validator and publishes the
   APK as the `latest` release.
 
+* `companion/` – "Astro" app on the watch. Feeds the face through two complications:
+  *Astro data* (one long text with fixed-width fields, spec generated into `FieldSpec.java`) and
+  *Astro tide graph* (picture). Weather details and tide come from Open-Meteo every 30 min; sun and
+  moon times are calculated on the watch; barometer, elevation and compass are read from sensors.
+
 Install: Wireless debugging on the watch, then `adb install AstroWatchFace.apk`.
 
 Font: Barlow (SIL Open Font License, see `tools/Barlow-OFL.txt`).

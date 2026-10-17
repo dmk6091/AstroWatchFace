@@ -1,0 +1,48 @@
+// Astro companion: runs on the watch and feeds the Astro watch face (complications).
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.dmk.astrocompanion'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.dmk.astrocompanion'
+        minSdk 30
+        targetSdk 35
+        versionCode Integer.parseInt(System.getenv('GITHUB_RUN_NUMBER') ?: '1')
+        versionName '1.' + (System.getenv('GITHUB_RUN_NUMBER') ?: 'local')
+    }
+
+    signingConfigs {
+        release {
+            storeFile file('../watchface/release.jks')
+            storePassword 'astrowatchface'
+            keyAlias 'astro'
+            keyPassword 'astrowatchface'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}
+
+dependencies {
+    implementation 'androidx.wear.watchface:watchface-complications-data-source:1.2.1'
+    implementation 'androidx.work:work-runtime:2.9.1'
+}
