@@ -179,6 +179,7 @@ final class Engine {
             Log.w(TAG, "tide: " + t);
             st.append(", tide failed: ").append(t.getMessage());
         }
+        st.append(", ").append(Iss.refresh(p, e));
         e.putString("status", new SimpleDateFormat("HH:mm", Locale.US).format(new Date(now)) + " " + st);
         e.apply();
         pushUpdates(ctx);
@@ -235,6 +236,16 @@ final class Engine {
         long day0 = cal.getTimeInMillis(), day1 = day0 + 86_400_000L;
         boolean loc = Store.hasLocation(p);
         double lat = Store.d(p, "lat", 0), lon = Store.d(p, "lon", 0);
+
+        // ISS: next pass you can see from here
+        if (loc) {
+            try {
+                String iss = Iss.faceText(p, lat, lon, now);
+                if (iss != null) v.put("iss", iss);
+            } catch (Throwable t) {
+                Log.w(TAG, "iss pass: " + t);
+            }
+        }
 
         // sun and moon
         if (loc) {

@@ -450,6 +450,7 @@ D(250, 365, 'tnow', 5, '%s m', 17, WHITE, 'CENTER', 70, sample='1.8')
 D(330, 365, 'tstate', 7, '%s', 14, '#5BA8F2', 'END', 70, sample='RISING', empty='')
 D(172, 418, 'hit', 5, 'HIGH %s', 15, SOFT, 'CENTER', 100, sample='14:32', empty='--:--')
 D(282, 418, 'lot', 5, 'LOW %s', 15, SOFT, 'CENTER', 100, sample='21:48', empty='--:--')
+D(225, 438, 'iss', 10, 'ISS %s', 14, ICE, 'CENTER', 130, sample='19:42 58°', empty='--')
 
 data_slot = ('<ComplicationSlot x="0" y="0" width="450" height="450" slotId="0" displayName="Astro data" '
              'supportedTypes="LONG_TEXT EMPTY" isCustomizable="TRUE">'

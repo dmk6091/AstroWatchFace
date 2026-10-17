@@ -44,7 +44,22 @@ final class Globe {
 
     /** sunFrac: 0 at sunrise .. 1 at sunset, or NaN at night. Cached for 5 minutes. */
     static synchronized Bitmap render(Context ctx, double lat0, double lon0, long now, double sunFrac) {
-        if (sCache != null && now - sCacheAt < 5 * 60_000L) return sCache;
+        return render(ctx, lat0, lon0, now, sunFrac, null);
+    }
+
+    /** Project lat/lon (deg) onto the globe: {x, y} or null on the far side. */
+    private static float[] project(double lat, double lon, double lat0, double lon0, double cx, double cy, double r) {
+        double p = lat * RAD, l = lon * RAD, p0 = lat0 * RAD, l0 = lon0 * RAD;
+        double cosc = Math.sin(p0) * Math.sin(p) + Math.cos(p0) * Math.cos(p) * Math.cos(l - l0);
+        if (cosc < 0) return null;
+        double x = Math.cos(p) * Math.sin(l - l0);
+        double y = Math.cos(p0) * Math.sin(p) - Math.sin(p0) * Math.cos(p) * Math.cos(l - l0);
+        return new float[]{(float) (cx + x * r), (float) (cy - y * r)};
+    }
+
+    /** With the ISS (dot + 20 min trail + 10 min ahead) when its orbit is known. Cached 2 min. */
+    static synchronized Bitmap render(Context ctx, double lat0, double lon0, long now, double sunFrac, Iss.Orbit iss) {
+        if (sCache != null && now - sCacheAt < 2 * 60_000L) return sCache;
         final int size = 300;
         Bitmap bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
         if (!load(ctx)) return bmp;
@@ -116,6 +131,7 @@ final class Globe {
             sun.setColor(Color.rgb(255, 200, 80));
             cv.drawCircle(sx, sy, 5.5f, sun);
         }
+        if (iss != null) drawIss(cv, iss, now, lat0, lon0, cx, cy, r);
         Paint me = new Paint(Paint.ANTI_ALIAS_FLAG);
         me.setStyle(Paint.Style.STROKE);
         me.setStrokeWidth(2f);
@@ -124,5 +140,35 @@ final class Globe {
         sCache = bmp;
         sCacheAt = now;
         return bmp;
+    }
+
+    private static void drawIss(Canvas cv, Iss.Orbit o, long now, double lat0, double lon0, double cx, double cy, double r) {
+        Paint trail = new Paint(Paint.ANTI_ALIAS_FLAG);
+        trail.setStyle(Paint.Style.FILL);
+        // past 20 min: fading dots; next 10 min: faint small dots (where it's heading)
+        for (int m = -20; m <= 10; m++) {
+            if (m == 0) continue;
+            double[] sp = Iss.subPoint(o, now + m * 60_000L);
+            float[] q = project(sp[0], sp[1], lat0, lon0, cx, cy, r);
+            if (q == null) continue;
+            int a = m < 0 ? (int) (40 + 150 * (1 + m / 20.0)) : 70;
+            trail.setColor(Color.argb(a, 230, 240, 255));
+            cv.drawCircle(q[0], q[1], m < 0 ? 1.8f : 1.3f, trail);
+        }
+        double[] sp = Iss.subPoint(o, now);
+        float[] q = project(sp[0], sp[1], lat0, lon0, cx, cy, r);
+        if (q == null) return;   // on the far side of the Earth right now
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        p.setColor(Color.argb(70, 255, 255, 255));
+        cv.drawCircle(q[0], q[1], 9, p);
+        p.setColor(Color.WHITE);
+        cv.drawCircle(q[0], q[1], 4.5f, p);
+        p.setColor(Color.rgb(90, 160, 255));
+        cv.drawCircle(q[0], q[1], 2.2f, p);
+        p.setColor(Color.WHITE);
+        p.setTextSize(15);
+        p.setFakeBoldText(true);
+        p.setShadowLayer(3, 0, 0, Color.BLACK);
+        cv.drawText("ISS", q[0] + 7, q[1] - 6, p);
     }
 }

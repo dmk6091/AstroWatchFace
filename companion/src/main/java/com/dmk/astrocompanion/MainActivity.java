@@ -139,7 +139,9 @@ public class MainActivity extends Activity {
                     .append("  Moon ").append(v.get("mage")).append('\n');
             sb.append("Tide ").append(v.get("tplace")).append(' ').append(v.get("tnow")).append(" m ")
                     .append(v.get("tstate")).append('\n');
-            sb.append("Heading ").append(v.get("head")).append(' ').append(v.get("hdir"));
+            sb.append("Heading ").append(v.get("head")).append(' ').append(v.get("hdir")).append('\n');
+            if (Store.hasLocation(p)) sb.append(Iss.describe(p, Store.d(p, "lat", 0), Store.d(p, "lon", 0),
+                    System.currentTimeMillis()));
             String s = sb.toString();
             runOnUiThread(() -> status.setText(s));
             Engine.pushUpdates(this);
