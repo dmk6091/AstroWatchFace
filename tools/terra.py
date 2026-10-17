@@ -506,6 +506,26 @@ D(108, 365, 'rhead', 15, '%s', 17, TEAL, 'START', 176, to=RP)
 D(340, 365, 'rlvl', 8, '%s', 14, SOFT, 'END', 80, to=RP)
 D(172, 418, 'rmax', 15, '%s', 15, SOFT, 'CENTER', 124, to=RP)
 D(282, 418, 'rend', 12, '%s', 15, SOFT, 'CENTER', 112, to=RP)
+# text along the bezel in the empty strips at 9 and 3 o'clock (reads upward on the left, downward on
+# the right, letters' tops toward the edge). Angles: 0 = 12 o'clock, clockwise.
+ARCS = []
+ARC_R = 204
+
+
+def ARC(name, width, mid, sample, size=15, color=SOFT, span=52):
+    start = sum(f[1] for f in FIELDS)
+    FIELDS.append((name, width, 'C'))
+    expr = 'subText([COMPLICATION.TEXT], %d, %d)' % (start, start + width)
+    COMP.append(('<PartText x="0" y="0" width="450" height="450"><TextCircular centerX="225" centerY="225" '
+                 'width="%d" height="%d" startAngle="%d" endAngle="%d" direction="CLOCKWISE" align="CENTER">'
+                 '<Font family="barlow_sc_semibold" size="%d" color="%s"><Template><![CDATA[%%s]]>'
+                 '<Parameter expression=%s/></Template></Font></TextCircular></PartText>')
+                % (2 * ARC_R, 2 * ARC_R, mid - span / 2, mid + span / 2, size, color, q(expr)))
+    ARCS.append((sample, mid, size, color))
+
+
+ARC('arcl', 24, 276, 'UV 6 · 1008 hPa (+1.2)')
+ARC('arcr', 26, 83, 'SUN 285°W · FACING 40°NE')
 TOTAL = sum(f[1] for f in FIELDS)     # + 1, 2 or 3 marks at the end: which screen (see Engine.pack)
 
 gx_, gy_, gw_, gh_ = GRAPH
@@ -681,6 +701,23 @@ prev.alpha_composite(wi, (92 - isz // 2, 196 - isz // 2))
 for res_, (x_, y_, w_, h_) in (('ic_wave', (81, 354, 22, 22)), ('dots_0', (205, 347, 40, 10))):
     im_ = Image.open(os.path.join(RES, 'drawable-nodpi', res_ + '.png')).convert('RGBA').resize((w_, h_), Image.LANCZOS)
     prev.alpha_composite(im_, (x_, y_))
+def arc_text(img, text, wff_mid, r_base, size, color):
+    f = pil_font('barlow_sc_semibold', size)
+    widths = [f.getlength(ch) for ch in text]
+    R = r_base + size * 0.35
+    ang = math.radians(wff_mid - 90) - sum(widths) / R / 2
+    for ch, w in zip(text, widths):
+        a_ = ang + w / R / 2
+        tile = Image.new('RGBA', (size * 2, size * 2), (0, 0, 0, 0))
+        ImageDraw.Draw(tile).text((size, size), ch, font=f, fill=hexrgb(color), anchor='mm')
+        rot = tile.rotate(-(math.degrees(a_) + 90), resample=Image.BICUBIC)
+        cx_, cy_ = 225 + R * math.cos(a_), 225 + R * math.sin(a_)
+        img.alpha_composite(rot, (int(cx_ - rot.width / 2), int(cy_ - rot.height / 2)))
+        ang += w / R
+
+
+for (txt_, mid_, size_, color_) in ARCS:
+    arc_text(prev, txt_, mid_, ARC_R, size_, color_)
 for (x, y, txt, size, color, font, align) in PREVIEW:
     anchor = 'mm' if align == 'CENTER' else ('lm' if align == 'START' else 'rm')
     pd.text((x, y), txt, font=pil_font(font, size), fill=hexrgb(color), anchor=anchor)

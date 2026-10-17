@@ -115,13 +115,31 @@ final class Engine {
         try {
             String url = String.format(Locale.US, "https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f"
                     + "&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,"
-                    + "wind_direction_10m,pressure_msl,surface_pressure&daily=sunrise,sunset"
+                    + "wind_direction_10m,pressure_msl,surface_pressure&daily=sunrise,sunset&hourly=uv_index"
                     + "&timezone=auto&timeformat=unixtime&forecast_days=2" + Rain.PARAMS, lat, lon);
             JSONObject j = new JSONObject(Net.get(url));
             try {
                 Rain.save(j, e);
             } catch (Throwable t) {
                 Log.w(TAG, "rain: " + t);
+            }
+            try {
+                JSONObject hr = j.getJSONObject("hourly");
+                JSONArray ht = hr.getJSONArray("time"), hu = hr.getJSONArray("uv_index");
+                StringBuilder ut = new StringBuilder(), uv = new StringBuilder();
+                for (int i = 0; i < ht.length(); i++) {
+                    if (hu.isNull(i)) continue;
+                    if (ut.length() > 0) {
+                        ut.append(',');
+                        uv.append(',');
+                    }
+                    ut.append(ht.getLong(i));
+                    uv.append(String.format(Locale.US, "%.1f", hu.getDouble(i)));
+                }
+                e.putString("uvT", ut.toString());
+                e.putString("uvV", uv.toString());
+            } catch (Throwable t) {
+                Log.w(TAG, "uv: " + t);
             }
             JSONObject cur = j.getJSONObject("current");
             Store.putD(e, "feels", cur.optDouble("apparent_temperature", Double.NaN));
@@ -329,6 +347,28 @@ final class Engine {
             v.put("hdir", Astro.dir8(head));
         }
 
+        // text along the bezel. Left: UV now, sea-level pressure (from the watch's barometer and the
+        // ground height) and its change over ~3 h. Right: where the sun is, where the watch points.
+        StringBuilder al = new StringBuilder();
+        double uvNow = uvAt(p, now);
+        al.append("UV ").append(Double.isNaN(uvNow) ? "--" : String.valueOf(Math.round(uvNow)));
+        double ground = Store.d(p, "ground", Double.NaN);
+        double sea = !Double.isNaN(hpa) && !Double.isNaN(ground) ? hpa / Math.pow(1 - ground / 44330.0, 5.255)
+                : Store.d(p, "msl", Double.NaN);
+        if (!Double.isNaN(sea)) {
+            al.append(" · ").append(Math.round(sea)).append(" hPa");
+            String tr = v.get("btrend");
+            if (tr != null) al.append(" (").append(tr).append(')');
+        }
+        v.put("arcl", al.toString());
+        if (loc) {
+            double saz = Astro.sunAzimuth(now, lat, lon);
+            StringBuilder ar = new StringBuilder("SUN ").append(Math.round(saz) % 360).append('°').append(Astro.dir8(saz));
+            if (!Double.isNaN(head))
+                ar.append(" · FACING ").append(Math.round(head) % 360).append('°').append(Astro.dir8(head));
+            v.put("arcr", ar.toString());
+        }
+
         // bottom panel: which screen, and the quake / rain screens' text
         v.put("panel", String.valueOf(Panel.checkAuto(ctx, p, now)));
         Quakes.values(p, v, now, loc ? lat : FALLBACK_LAT, loc ? lon : FALLBACK_LON);
@@ -356,6 +396,23 @@ final class Engine {
             }
         }
         return v;
+    }
+
+    /** UV index now (between the hourly values), NaN when unknown. */
+    private static double uvAt(SharedPreferences p, long now) {
+        try {
+            String[] t = p.getString("uvT", "").split(","), u = p.getString("uvV", "").split(",");
+            long s = now / 1000;
+            for (int i = 0; i + 1 < t.length && i + 1 < u.length; i++) {
+                long a = Long.parseLong(t[i].trim()), b = Long.parseLong(t[i + 1].trim());
+                if (s >= a && s <= b) {
+                    double ua = Double.parseDouble(u[i]), ub = Double.parseDouble(u[i + 1]);
+                    return ua + (ub - ua) * (s - a) / (double) (b - a);
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return Double.NaN;
     }
 
     /** Pressure change over about 3 hours as "+1.2" / "-0.8", from samples kept every 10 min. */

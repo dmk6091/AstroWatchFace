@@ -13,6 +13,8 @@ deep-space colours, big readable values.
   rain in the next 2 h (15-min bars; comes up by itself when rain is under 30 min away).
 * **On the globe:** earthquakes of the last 24 h as red rings (USGS), the Moon over the place where
   it is overhead (with its phase), the ISS, the sun's glow.
+* **Along the edge** (9 and 3 o'clock): UV index, sea-level pressure (watch barometer) with its 3-hour change;
+  sun direction and where the watch points (compass, read when the face refreshes).
 * Thin battery ring around the edge.
 
 Parts:
