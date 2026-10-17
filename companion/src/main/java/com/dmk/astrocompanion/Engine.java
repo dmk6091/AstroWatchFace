@@ -116,8 +116,13 @@ final class Engine {
             String url = String.format(Locale.US, "https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f"
                     + "&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,"
                     + "wind_direction_10m,pressure_msl,surface_pressure&daily=sunrise,sunset"
-                    + "&timezone=auto&timeformat=unixtime&forecast_days=2", lat, lon);
+                    + "&timezone=auto&timeformat=unixtime&forecast_days=2" + Rain.PARAMS, lat, lon);
             JSONObject j = new JSONObject(Net.get(url));
+            try {
+                Rain.save(j, e);
+            } catch (Throwable t) {
+                Log.w(TAG, "rain: " + t);
+            }
             JSONObject cur = j.getJSONObject("current");
             Store.putD(e, "feels", cur.optDouble("apparent_temperature", Double.NaN));
             Store.putD(e, "hum", cur.optDouble("relative_humidity_2m", Double.NaN));
@@ -180,6 +185,7 @@ final class Engine {
             st.append(", tide failed: ").append(t.getMessage());
         }
         st.append(", ").append(Iss.refresh(p, e));
+        st.append(", ").append(Quakes.refresh(e));
         e.putString("status", new SimpleDateFormat("HH:mm", Locale.US).format(new Date(now)) + " " + st);
         e.apply();
         pushUpdates(ctx);
@@ -323,6 +329,11 @@ final class Engine {
             v.put("hdir", Astro.dir8(head));
         }
 
+        // bottom panel: which screen, and the quake / rain screens' text
+        v.put("panel", String.valueOf(Panel.checkAuto(ctx, p, now)));
+        Quakes.values(p, v, now, loc ? lat : FALLBACK_LAT, loc ? lon : FALLBACK_LON);
+        Rain.values(p, v, now);
+
         // tide
         Tide.Series s = Tide.Series.load(p);
         int idx = p.getInt("tidePlace", -1);
@@ -389,6 +400,14 @@ final class Engine {
             out.append(s);
             for (int k = 0; k < pad - left; k++) out.append(' ');
         }
+        // which bottom-panel screen: told by the text's length (1, 2 or 3 extra marks), since the
+        // face can compare numbers but not words
+        int panel = 0;
+        try {
+            panel = Integer.parseInt(v.get("panel"));
+        } catch (Exception ignored) {
+        }
+        for (int k = 0; k <= panel; k++) out.append('#');
         return out.toString();
     }
 }

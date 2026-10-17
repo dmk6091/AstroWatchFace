@@ -236,6 +236,9 @@ public class MainActivity extends Activity {
             sb.append("Tide ").append(v.get("tplace")).append(' ').append(v.get("tnow")).append(" m ")
                     .append(v.get("tstate")).append('\n');
             sb.append("Heading ").append(v.get("head")).append(' ').append(v.get("hdir")).append('\n');
+            sb.append("Quake ").append(v.get("qmag")).append(' ').append(v.get("qplace")).append(' ')
+                    .append(v.get("qago")).append('\n');
+            sb.append("Rain ").append(v.get("rhead")).append(' ').append(v.get("rend")).append('\n');
             if (Store.hasLocation(p)) sb.append(Iss.describe(p, Store.d(p, "lat", 0), Store.d(p, "lon", 0),
                     System.currentTimeMillis()));
             String s = sb.toString();

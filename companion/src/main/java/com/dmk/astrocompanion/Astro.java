@@ -89,6 +89,20 @@ final class Astro {
         return new double[]{c[0], lon};
     }
 
+    /** Where the Moon is straight overhead: {lat, lon} in degrees. */
+    static double[] sublunar(long ms) {
+        double d = toDays(ms);
+        double ml = RAD * (218.316 + 13.176396 * d);
+        double mm = RAD * (134.963 + 13.064993 * d);
+        double f = RAD * (93.272 + 13.229350 * d);
+        double l = ml + RAD * 6.289 * Math.sin(mm);
+        double b = RAD * 5.128 * Math.sin(f);
+        double ra = rightAscension(l, b), dec = declination(l, b);
+        double lon = ra - RAD * (280.16 + 360.9856235 * d);
+        lon = ((lon + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+        return new double[]{Math.toDegrees(dec), Math.toDegrees(lon)};
+    }
+
     /** Moon age in days since new moon (0..29.5), from the sun-moon elongation. */
     static double moonAge(long ms) {
         double d = toDays(ms);

@@ -119,6 +119,10 @@ final class Globe {
             sun.setColor(Color.rgb(255, 200, 80));
             cv.drawCircle(sp[0], sp[1], 6, sun);
         }
+        drawQuakes(cv, ctx, now, lat0, lon0, cx, cy, r);
+        double[] ml = Astro.sublunar(now);
+        float[] mp = project(ml[0], ml[1], lat0, lon0, cx, cy, r);
+        if (mp != null) drawMoon(cv, mp[0], mp[1], 11, Astro.moonAge(now));
         if (iss != null) drawIss(cv, iss, now, lat0, lon0, cx, cy, r);
         Paint me = new Paint(Paint.ANTI_ALIAS_FLAG);
         me.setStyle(Paint.Style.STROKE);
@@ -128,6 +132,69 @@ final class Globe {
         sCache = bmp;
         sCacheAt = now;
         return bmp;
+    }
+
+    /** Earthquakes of the last 24 h: bigger ring = stronger, fainter = older; the strongest is labelled. */
+    private static void drawQuakes(Canvas cv, Context ctx, long now, double lat0, double lon0, double cx, double cy, double r) {
+        java.util.List<Quakes.Q> qs = Quakes.load(Store.p(ctx), now);
+        if (qs.isEmpty()) return;
+        java.util.List<Quakes.Q> order = new java.util.ArrayList<>(qs);
+        order.sort((a, b) -> Long.compare(a.time, b.time));      // oldest first, newest on top
+        Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG);
+        ring.setStyle(Paint.Style.STROKE);
+        Paint dot = new Paint(Paint.ANTI_ALIAS_FLAG);
+        Quakes.Q big = null;
+        for (Quakes.Q q : order) {
+            float[] p = project(q.lat, q.lon, lat0, lon0, cx, cy, r);
+            if (p == null) continue;
+            if (big == null || q.mag > big.mag) big = q;
+            float rad = (float) (4.5 + 2.6 * Math.max(0, q.mag - 4.5));
+            int a = (int) (255 * (1 - 0.6 * Math.min(1, (now - q.time) / (24 * 3600_000.0))));
+            ring.setStrokeWidth(1f);
+            ring.setColor(Color.argb(a / 4, 255, 84, 64));
+            cv.drawCircle(p[0], p[1], rad * 1.9f, ring);
+            ring.setStrokeWidth(1.6f);
+            ring.setColor(Color.argb(a, 255, 84, 64));
+            cv.drawCircle(p[0], p[1], rad, ring);
+            dot.setColor(Color.argb(a, 255, 84, 64));
+            cv.drawCircle(p[0], p[1], 1.6f, dot);
+        }
+        if (big != null) {
+            float[] p = project(big.lat, big.lon, lat0, lon0, cx, cy, r);
+            Paint t = new Paint(Paint.ANTI_ALIAS_FLAG);
+            t.setTextSize(13);
+            t.setFakeBoldText(true);
+            t.setTextAlign(Paint.Align.CENTER);
+            t.setColor(Color.rgb(255, 150, 130));
+            t.setShadowLayer(3, 0, 0, Color.BLACK);
+            // label below-left, kept on the screen
+            float lx = Math.max(24, Math.min(426, p[0] - 12)), ly = Math.min(436, p[1] + 19);
+            cv.drawText(String.format(java.util.Locale.US, "M%.1f", big.mag), lx, ly, t);
+        }
+    }
+
+    /** The Moon over the place where it's straight overhead, with its current phase (as seen from the north). */
+    private static void drawMoon(Canvas cv, float x, float y, float r, double age) {
+        Paint glow = new Paint(Paint.ANTI_ALIAS_FLAG);
+        glow.setShader(new android.graphics.RadialGradient(x, y, r * 2.3f, Color.argb(90, 200, 215, 255),
+                Color.argb(0, 200, 215, 255), android.graphics.Shader.TileMode.CLAMP));
+        cv.drawCircle(x, y, r * 2.3f, glow);
+        Paint dark = new Paint(Paint.ANTI_ALIAS_FLAG);
+        dark.setColor(Color.rgb(46, 50, 60));
+        cv.drawCircle(x, y, r, dark);
+        double k = Math.cos(2 * Math.PI * age / 29.530589);   // 1 new .. -1 full
+        android.graphics.Path lit = new android.graphics.Path();
+        lit.arcTo(new RectF(x - r, y - r, x + r, y + r), -90, 180);      // lit edge: top, right, bottom
+        float rx = (float) (r * Math.abs(k));
+        RectF ell = new RectF(x - rx, y - r, x + rx, y + r);
+        lit.arcTo(ell, 90, k > 0 ? -180 : 180);                           // day/night line back to the top
+        lit.close();
+        cv.save();
+        if (age > 29.530589 / 2) cv.scale(-1, 1, x, y);                   // waning: lit on the left
+        Paint lp = new Paint(Paint.ANTI_ALIAS_FLAG);
+        lp.setColor(Color.rgb(236, 239, 246));
+        cv.drawPath(lit, lp);
+        cv.restore();
     }
 
     private static void drawIss(Canvas cv, Iss.Orbit o, long now, double lat0, double lon0, double cx, double cy, double r) {

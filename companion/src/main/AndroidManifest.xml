@@ -45,6 +45,11 @@
             </intent-filter>
         </receiver>
 
+        <!-- Tap on the face's bottom panel: next screen (tide / quakes / rain) -->
+        <receiver
+            android:name=".Panel"
+            android:exported="false" />
+
         <!-- All the numbers for the Astro face, in one text (fixed-width fields). -->
         <service
             android:name=".DataService"
@@ -81,12 +86,12 @@
                 android:value="300" />
         </service>
 
-        <!-- Tide curve picture for the tide panel. -->
+        <!-- Picture for the bottom panel: tide curve / quake timeline / rain bars. -->
         <service
             android:name=".TideGraphService"
             android:exported="true"
             android:icon="@drawable/ic_astro"
-            android:label="Astro tide graph"
+            android:label="Astro panel picture"
             android:permission="com.google.android.wearable.permission.BIND_COMPLICATION_PROVIDER">
             <intent-filter>
                 <action android:name="android.support.wearable.complications.ACTION_COMPLICATION_UPDATE_REQUEST" />
@@ -96,7 +101,7 @@
                 android:value="SMALL_IMAGE,PHOTO_IMAGE" />
             <meta-data
                 android:name="android.support.wearable.complications.UPDATE_PERIOD_SECONDS"
-                android:value="900" />
+                android:value="300" />
         </service>
     </application>
 </manifest>

@@ -19,10 +19,12 @@ import java.util.concurrent.Executors;
 public class DataService extends ComplicationDataSourceService {
     private static final ExecutorService EXEC = Executors.newSingleThreadExecutor();
 
-    static ComplicationData text(String s) {
-        return new LongTextComplicationData.Builder(
+    static ComplicationData text(String s, android.app.PendingIntent tap) {
+        LongTextComplicationData.Builder b = new LongTextComplicationData.Builder(
                 new PlainComplicationText.Builder(s).build(),
-                new PlainComplicationText.Builder("Astro data").build()).build();
+                new PlainComplicationText.Builder("Astro data").build());
+        if (tap != null) b.setTapAction(tap);   // tap on the ISS line: open Astro
+        return b.build();
     }
 
     @Override
@@ -34,7 +36,7 @@ public class DataService extends ComplicationDataSourceService {
                 if (request.getComplicationType() != ComplicationType.LONG_TEXT) {
                     data = new NoDataComplicationData();
                 } else {
-                    data = text(Engine.pack(Engine.values(this)));
+                    data = text(Engine.pack(Engine.values(this)), Panel.openApp(this));
                 }
             } catch (Throwable t) {
                 Log.w(Engine.TAG, "data: " + t);
@@ -57,6 +59,6 @@ public class DataService extends ComplicationDataSourceService {
         v.put("elev", "560");
         v.put("baro", "1008");
         v.put("tnow", "1.8");
-        return text(Engine.pack(v));
+        return text(Engine.pack(v), null);
     }
 }

@@ -218,7 +218,8 @@ fg = Image.new('RGBA', (S, S), (0, 0, 0, 0))
 d = ImageDraw.Draw(fg)
 # thin dividers
 d.line(P(60, 160) + P(390, 160), fill=(150, 175, 215, 200), width=SS)
-d.line(P(110, 352) + P(340, 352), fill=(150, 175, 215, 140), width=SS)
+d.line(P(110, 352) + P(203, 352), fill=(150, 175, 215, 140), width=SS)   # gap: page dots of the bottom panel
+d.line(P(247, 352) + P(340, 352), fill=(150, 175, 215, 140), width=SS)
 
 
 def label(text, x, y, size, color, font='barlow_sc_semibold', anchor='mm'):
@@ -316,8 +317,37 @@ icon(drop(), 52, 305, 20)
 icon(leaf(), 52, 335, 20)
 icon(mountain(), 318, 300, 24)
 icon(hourglass(), 318, 331, 20)
-icon(wave(), 92, 365, 20)
 label('AQI', 72, 335, 12, GREEN, anchor='lm')
+
+
+# bottom panel icons (one per screen) and its page dots
+def seismo():
+    im = canvas()
+    dd = ImageDraw.Draw(im)
+    pts = [(5, 100), (40, 100), (62, 30), (95, 170), (125, 55), (148, 130), (165, 100), (195, 100)]
+    dd.line(pts, fill=hexrgb(QRED_ICON), width=14, joint='curve')
+    return im
+
+
+QRED_ICON = '#FF5440'
+for name, im in (('ic_wave', wave()), ('ic_quake', seismo()), ('ic_rain', umbrella())):
+    im.resize((44, 44), Image.LANCZOS).save(os.path.join(RES, 'drawable-nodpi', name + '.png'))
+
+
+def dots(active):
+    im = Image.new('RGBA', (80 * 2, 20 * 2), (0, 0, 0, 0))
+    dd = ImageDraw.Draw(im)
+    for i in range(3):
+        x, y = (8 + 12 * i) * 4, 5 * 4      # 4x: 40 x 10 at the face's scale
+        if i == active:
+            dd.ellipse((x - 13, y - 13, x + 13, y + 13), fill=(230, 238, 250, 255))
+        else:
+            dd.ellipse((x - 10, y - 10, x + 10, y + 10), outline=(150, 175, 215, 230), width=4)
+    return im.resize((80, 20), Image.LANCZOS)
+
+
+for i in range(3):
+    dots(i).save(os.path.join(RES, 'drawable-nodpi', 'dots_%d.png' % i))
 
 # fallback globe (shown until the companion sends the live one): daylit Earth over India
 _day = Image.open(os.path.join(HERE, 'textures', 'earth_day.jpg')).convert('RGB')
@@ -431,14 +461,23 @@ FIELDS, COMP, EMPTY = [], [], []
 
 
 def D(x, y, name, width, template, size, color, align='CENTER', w=None, font='barlow_sc_semibold', sample='',
-      empty='--'):
+      empty='--', to=None):
+    """A companion value. to: one of the bottom panel's screens (PANEL[...]) instead of always shown."""
     start = sum(f[1] for f in FIELDS)
     FIELDS.append((name, width, {'START': 'L', 'END': 'R', 'CENTER': 'C'}[align]))
     expr = 'subText([COMPLICATION.TEXT], %d, %d)' % (start, start + width)
     SAMPLES[expr] = sample
-    COMP.append(T(x, y, template, [expr], size=size, color=color, font=font, align=align, width=w))
-    EMPTY.append(T(x, y, template, ['"%s"' % empty], size=size, color=color, font=font, align=align, width=w,
-                   preview=False))
+    (COMP if to is None else to).append(T(x, y, template, [expr], size=size, color=color, font=font, align=align,
+                                          width=w, preview=(to is None or to is PANEL['tide'])))
+    if to is None or to is PANEL['tide']:
+        EMPTY.append(T(x, y, template, ['"%s"' % empty], size=size, color=color, font=font, align=align, width=w,
+                       preview=False))
+
+
+# bottom panel: three screens (tide / quakes / rain), the companion picks one, a tap goes to the next
+PANEL = {'tide': [], 'quake': [], 'rain': []}
+QRED = '#FF5440'
+
 
 
 D(142, 82, 'srise', 5, '%s', 19, WHITE, 'START', 70, sample='06:18', empty='--:--')
@@ -448,42 +487,90 @@ D(98, 335, 'aqi', 4, '%s', 21, WHITE, 'START', 60, sample='54')
 D(358, 260, 'mage', 6, '%s', 16, SOFT, 'CENTER', 90, sample='6.2 d')
 D(334, 300, 'alt', 5, '%s m', 21, WHITE, 'START', 90, sample='560')
 D(334, 331, 'dlen', 7, '%s', 19, WHITE, 'START', 90, sample='11h 41m', empty='--h --m')
-D(108, 365, 'tplace', 10, '%s', 16, ICE, 'START', 110, sample='MUMBAI', empty='TIDE')
-D(250, 365, 'tnow', 5, '%s m', 17, WHITE, 'CENTER', 70, sample='1.8')
-D(330, 365, 'tstate', 7, '%s', 14, '#5BA8F2', 'END', 70, sample='RISING', empty='')
-D(172, 418, 'hit', 5, 'HIGH %s', 15, SOFT, 'CENTER', 100, sample='14:32', empty='--:--')
-D(282, 418, 'lot', 5, 'LOW %s', 15, SOFT, 'CENTER', 100, sample='21:48', empty='--:--')
+TP, QP, RP = PANEL['tide'], PANEL['quake'], PANEL['rain']
+D(108, 365, 'tplace', 10, '%s', 16, ICE, 'START', 110, sample='MUMBAI', empty='TIDE', to=TP)
+D(250, 365, 'tnow', 5, '%s m', 17, WHITE, 'CENTER', 70, sample='1.8', to=TP)
+D(330, 365, 'tstate', 7, '%s', 14, '#5BA8F2', 'END', 70, sample='RISING', empty='', to=TP)
+D(172, 418, 'hit', 5, 'HIGH %s', 15, SOFT, 'CENTER', 100, sample='14:32', empty='--:--', to=TP)
+D(282, 418, 'lot', 5, 'LOW %s', 15, SOFT, 'CENTER', 100, sample='21:48', empty='--:--', to=TP)
 D(225, 438, 'iss', 10, 'ISS %s', 14, ICE, 'CENTER', 130, sample='19:42 58°', empty='--')
+# quakes: strongest of the last 24 h, how long ago, how many, nearest to you
+D(110, 365, 'qmag', 5, '%s', 17, QRED, 'START', 44, to=QP)
+D(148, 365, 'qplace', 16, '%s', 15, WHITE, 'START', 140, to=QP)
+D(340, 365, 'qago', 7, '%s', 14, SOFT, 'END', 60, to=QP)
+D(172, 418, 'qcnt', 10, '%s', 15, SOFT, 'CENTER', 104, to=QP)
+D(280, 418, 'qnear', 14, '%s', 15, SOFT, 'CENTER', 124, to=QP)
+# rain: when it starts, how heavy, how much at most, when it stops
+D(108, 365, 'rhead', 15, '%s', 17, TEAL, 'START', 176, to=RP)
+D(340, 365, 'rlvl', 8, '%s', 14, SOFT, 'END', 80, to=RP)
+D(172, 418, 'rmax', 15, '%s', 15, SOFT, 'CENTER', 124, to=RP)
+D(282, 418, 'rend', 12, '%s', 15, SOFT, 'CENTER', 112, to=RP)
+TOTAL = sum(f[1] for f in FIELDS)     # + 1, 2 or 3 marks at the end: which screen (see Engine.pack)
+
+gx_, gy_, gw_, gh_ = GRAPH
+
+
+def pimg(res, x, y, w, h):
+    return '<PartImage x="%.1f" y="%.1f" width="%.1f" height="%.1f"><Image resource="%s"/></PartImage>' % (
+        x, y, w, h, res)
+
+
+def ptxt(x, y, s, size, color, align):
+    return T(x, y, s, size=size, color=color, align=align, width=40, preview=False)
+
+
+for name, ic, i, ends in (('tide', 'ic_wave', 0, None), ('quake', 'ic_quake', 1, ('-24h', 'NOW')),
+                          ('rain', 'ic_rain', 2, ('NOW', '+2h'))):
+    PANEL[name].insert(0, pimg(ic, 92 - 11, 365 - 11, 22, 22) + pimg('dots_%d' % i, 205, 347, 40, 10))
+    if ends:
+        PANEL[name].append(ptxt(gx_ - 2, gy_ + gh_ - 3, ends[0], 10, DIM, 'END')
+                           + ptxt(gx_ + gw_ + 2, gy_ + gh_ - 3, ends[1], 10, DIM, 'START'))
+panel_group = ('<Group name="panel" x="0" y="0" width="450" height="450"><Condition><Expressions>'
+               '<Expression name="pq"><![CDATA[textLength([COMPLICATION.TEXT]) == %d]]></Expression>'
+               '<Expression name="pr"><![CDATA[textLength([COMPLICATION.TEXT]) == %d]]></Expression>'
+               '</Expressions><Compare expression="pq">%s</Compare><Compare expression="pr">%s</Compare>'
+               '<Default>%s</Default></Condition></Group>') % (TOTAL + 2, TOTAL + 3, ''.join(PANEL['quake']),
+                                                                ''.join(PANEL['rain']), ''.join(PANEL['tide']))
+COMP.append(panel_group)
+EMPTY.insert(0, pimg('ic_wave', 92 - 11, 365 - 11, 22, 22) + pimg('dots_0', 205, 347, 40, 10))
 
 data_slot = ('<ComplicationSlot x="0" y="0" width="450" height="450" slotId="0" displayName="Astro data" '
              'supportedTypes="LONG_TEXT EMPTY" isCustomizable="TRUE">'
              '<DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="EMPTY" '
              'primaryProvider="com.dmk.astrocompanion/com.dmk.astrocompanion.DataService" '
              'primaryProviderType="LONG_TEXT"/>'
-             '<BoundingOval x="0" y="0" width="450" height="450"/>'
+             '<BoundingBox x="150" y="428" width="150" height="20"/>'
              '<Complication type="LONG_TEXT">%s</Complication>'
              '<Complication type="EMPTY">%s</Complication>'
              '<Variant mode="AMBIENT" target="alpha" value="0"/>'
              '</ComplicationSlot>') % (''.join(COMP), ''.join(EMPTY))
 
 
-def image_slot(slot_id, name, provider, x, y, w, h):
-    img = ('<PartImage x="0" y="0" width="%d" height="%d"><Image resource="[COMPLICATION.%%s]"/></PartImage>'
-           % (w, h))
+def image_slot(slot_id, name, provider, x, y, w, h, bound=None, img_at=None):
+    """bound: tap area (x, y, w, h) inside the slot; img_at: where the picture goes inside the slot."""
+    ix, iy, iw, ih = img_at or (0, 0, w, h)
+    img = ('<PartImage x="%d" y="%d" width="%d" height="%d"><Image resource="[COMPLICATION.%%s]"/></PartImage>'
+           % (ix, iy, iw, ih))
+    bx, by, bw, bh = bound or (0, 0, w, h)
     return ('<ComplicationSlot x="%d" y="%d" width="%d" height="%d" slotId="%d" displayName="%s" '
             'supportedTypes="SMALL_IMAGE PHOTO_IMAGE EMPTY" isCustomizable="TRUE">'
             '<DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="EMPTY" '
             'primaryProvider="com.dmk.astrocompanion/com.dmk.astrocompanion.%s" primaryProviderType="SMALL_IMAGE"/>'
-            '<BoundingBox x="0" y="0" width="%d" height="%d"/>'
+            '<BoundingBox x="%d" y="%d" width="%d" height="%d"/>'
             '<Complication type="SMALL_IMAGE">%s</Complication>'
             '<Complication type="PHOTO_IMAGE">%s</Complication>'
             '<Variant mode="AMBIENT" target="alpha" value="0"/>'
-            '</ComplicationSlot>') % (x, y, w, h, slot_id, name, provider, w, h, img % 'SMALL_IMAGE',
+            '</ComplicationSlot>') % (x, y, w, h, slot_id, name, provider, bx, by, bw, bh, img % 'SMALL_IMAGE',
                                       img % 'PHOTO_IMAGE')
 
 
-globe_slot = image_slot(1, 'Astro globe', 'GlobeService', gx - gs / 2, gy - gs / 2, gs, gs)
-graph_slot = image_slot(2, 'Tide graph', 'TideGraphService', *GRAPH)
+# globe: tap the centre (you) to open Astro
+globe_slot = image_slot(1, 'Astro globe', 'GlobeService', gx - gs / 2, gy - gs / 2, gs, gs,
+                        bound=(gs / 2 - 40, gs / 2 - 40, 80, 80))
+# bottom panel: the whole panel is the tap area (next screen), the picture sits in the graph strip
+PX, PY, PW, PH = 80, 356, 290, 72
+graph_slot = image_slot(2, 'Astro panel', 'TideGraphService', PX, PY, PW, PH,
+                        img_at=(GRAPH[0] - PX, GRAPH[1] - PY, GRAPH[2], GRAPH[3]))
 
 
 # battery: very thin ring around the edge, clockwise from 12 o'clock, red at 20 % or less
@@ -582,6 +669,9 @@ mi = Image.open(os.path.join(RES, 'drawable-nodpi', 'moon_09.png')).resize((msz,
 prev.alpha_composite(mi, (358 - msz // 2, 198 - msz // 2))
 wi = Image.open(os.path.join(RES, 'drawable-nodpi', 'wx_d_14.png')).resize((isz, isz), Image.LANCZOS)
 prev.alpha_composite(wi, (92 - isz // 2, 196 - isz // 2))
+for res_, (x_, y_, w_, h_) in (('ic_wave', (81, 354, 22, 22)), ('dots_0', (205, 347, 40, 10))):
+    im_ = Image.open(os.path.join(RES, 'drawable-nodpi', res_ + '.png')).convert('RGBA').resize((w_, h_), Image.LANCZOS)
+    prev.alpha_composite(im_, (x_, y_))
 for (x, y, txt, size, color, font, align) in PREVIEW:
     anchor = 'mm' if align == 'CENTER' else ('lm' if align == 'START' else 'rm')
     pd.text((x, y), txt, font=pil_font(font, size), fill=hexrgb(color), anchor=anchor)

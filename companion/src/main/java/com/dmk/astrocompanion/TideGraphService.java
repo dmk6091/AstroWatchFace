@@ -1,5 +1,7 @@
 package com.dmk.astrocompanion;
 
+import android.app.PendingIntent;
+import android.content.SharedPreferences;
 import android.graphics.drawable.Icon;
 import android.util.Log;
 
@@ -14,7 +16,10 @@ import androidx.wear.watchface.complications.data.SmallImageType;
 import androidx.wear.watchface.complications.datasource.ComplicationDataSourceService;
 import androidx.wear.watchface.complications.datasource.ComplicationRequest;
 
-/** Today's tide curve as a picture for the face's tide panel. */
+/**
+ * The picture in the face's bottom panel: today's tide curve, the last 24 h of earthquakes, or
+ * the next 2 h of rain (see Panel). Tapping the panel moves to the next screen.
+ */
 public class TideGraphService extends ComplicationDataSourceService {
 
     /** As a small "photo" image (what Samsung lets other apps provide), or a full photo image. */
@@ -23,22 +28,25 @@ public class TideGraphService extends ComplicationDataSourceService {
     }
 
     static ComplicationData image(ComplicationType type, android.graphics.Bitmap b, String what) {
-        PlainComplicationText desc = new PlainComplicationText.Builder(what).build();
-        if (type == ComplicationType.PHOTO_IMAGE) {
-            return new PhotoImageComplicationData.Builder(Icon.createWithBitmap(b), desc).build();
-        }
-        return new SmallImageComplicationData.Builder(
-                new SmallImage.Builder(Icon.createWithBitmap(b), SmallImageType.PHOTO).build(), desc).build();
+        return image(type, Icon.createWithBitmap(b), what, null);
     }
 
-    /** Same, from an already compressed picture (big images: a raw bitmap is too large to send). */
     static ComplicationData image(ComplicationType type, Icon icon, String what) {
+        return image(type, icon, what, null);
+    }
+
+    /** From a picture (a big one goes compressed: a raw bitmap is too large to send), with a tap action. */
+    static ComplicationData image(ComplicationType type, Icon icon, String what, PendingIntent tap) {
         PlainComplicationText desc = new PlainComplicationText.Builder(what).build();
         if (type == ComplicationType.PHOTO_IMAGE) {
-            return new PhotoImageComplicationData.Builder(icon, desc).build();
+            PhotoImageComplicationData.Builder b = new PhotoImageComplicationData.Builder(icon, desc);
+            if (tap != null) b.setTapAction(tap);
+            return b.build();
         }
-        return new SmallImageComplicationData.Builder(
-                new SmallImage.Builder(icon, SmallImageType.PHOTO).build(), desc).build();
+        SmallImageComplicationData.Builder b = new SmallImageComplicationData.Builder(
+                new SmallImage.Builder(icon, SmallImageType.PHOTO).build(), desc);
+        if (tap != null) b.setTapAction(tap);
+        return b.build();
     }
 
     static Icon jpeg(android.graphics.Bitmap b) {
@@ -59,8 +67,13 @@ public class TideGraphService extends ComplicationDataSourceService {
             if (!ours(request.getComplicationType())) {
                 data = new NoDataComplicationData();
             } else {
-                data = image(request.getComplicationType(),
-                        Tide.graph(Tide.Series.load(Store.p(this)), System.currentTimeMillis()));
+                SharedPreferences p = Store.p(this);
+                long now = System.currentTimeMillis();
+                int panel = Panel.current(p, now);
+                android.graphics.Bitmap b = panel == Panel.QUAKES ? Quakes.graph(p, now)
+                        : panel == Panel.RAIN ? Rain.graph(p, now)
+                        : Tide.graph(Tide.Series.load(p), now);
+                data = image(request.getComplicationType(), Icon.createWithBitmap(b), "Bottom panel", Panel.tap(this));
             }
         } catch (Throwable t) {
             Log.w(Engine.TAG, "graph: " + t);
