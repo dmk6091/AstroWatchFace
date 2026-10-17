@@ -783,12 +783,12 @@ data_slot = ('<ComplicationSlot x="0" y="0" width="450" height="450" slotId="0" 
              '<DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="EMPTY" '
              'primaryProvider="com.dmk.astrocompanion/com.dmk.astrocompanion.DataService" '
              'primaryProviderType="LONG_TEXT"/>'
-             '<BoundingBox x="%d" y="%d" width="%d" height="%d"/>'
+             '<BoundingOval x="0" y="0" width="450" height="450"/>'
              '<Complication type="LONG_TEXT">%s</Complication>'
              '<Complication type="EMPTY">%s</Complication>'
              '<Variant mode="AMBIENT" target="alpha" value="0"/>'
-             '</ComplicationSlot>') % (round(mx(410)), round(my(880)), round(mx(845) - mx(410)),
-                                       round(my(1000) - my(880)), ''.join(COMP), ''.join(EMPTY))
+             '</ComplicationSlot>') % (''.join(COMP), ''.join(EMPTY))
+# (Samsung clips a slot's drawing to its bounding shape, so this one covers the whole face.)
 gx, gy = mx(398), my(664)
 gw, gh = mx(842) - gx, my(758) - gy
 graph_slot = ('<ComplicationSlot x="%d" y="%d" width="%d" height="%d" slotId="1" displayName="Tide graph" '
