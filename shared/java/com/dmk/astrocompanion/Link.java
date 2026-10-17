@@ -17,7 +17,7 @@ final class Link {
     // status keys
     static final String K_APP = "app", K_FACE = "face", K_STATUS = "status", K_UPD = "upd", K_TIDE = "tideIdx",
             K_TIDE_NAME = "tideName", K_PANEL = "panel", K_AUTO = "autoUpd", K_RAIN = "rainAuto", K_COMPASS = "compass",
-            K_ALLOWED = "allowed", K_TIME = "t", K_MODEL = "model", K_REFRESHED = "wTime";
+            K_ALLOWED = "allowed", K_TIME = "t", K_MODEL = "model", K_REFRESHED = "wTime", K_BATT = "battery", K_CHG = "charging";
 
     private Link() {}
 }

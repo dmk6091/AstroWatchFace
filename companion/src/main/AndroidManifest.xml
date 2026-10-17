@@ -45,6 +45,18 @@
             </intent-filter>
         </receiver>
 
+        <!-- Battery state changes, for the phone's status bar -->
+        <receiver
+            android:name=".BatteryReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
+                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
+                <action android:name="android.intent.action.BATTERY_LOW" />
+                <action android:name="android.intent.action.BATTERY_OKAY" />
+            </intent-filter>
+        </receiver>
+
         <!-- Android's installer answers (updates) -->
         <receiver
             android:name=".InstallStatus"

@@ -140,6 +140,14 @@ public class WatchLink extends WearableListenerService {
             r.getDataMap().putLong(Link.K_REFRESHED, p.getLong("wTime", 0));
             r.getDataMap().putString(Link.K_MODEL, Build.MODEL);
             r.getDataMap().putLong(Link.K_TIME, now);
+            android.content.Intent bi = c.registerReceiver(null,
+                    new android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED));
+            if (bi != null) {
+                int lv = bi.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1);
+                int sc = bi.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, 100);
+                r.getDataMap().putInt(Link.K_BATT, lv < 0 ? -1 : Math.round(lv * 100f / Math.max(1, sc)));
+                r.getDataMap().putBoolean(Link.K_CHG, bi.getIntExtra(android.os.BatteryManager.EXTRA_PLUGGED, 0) != 0);
+            }
             Wearable.getDataClient(c).putDataItem(r.asPutDataRequest().setUrgent());
         } catch (Throwable t) {
             Log.w(Store.TAG, "publish: " + t);

@@ -24,6 +24,23 @@
             </intent-filter>
         </activity>
 
+        <!-- Watch battery arrives in the background, and is offered to the status bar module -->
+        <service
+            android:name=".PhoneLink"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/astro"
+                    android:scheme="wear" />
+            </intent-filter>
+        </service>
+        <provider
+            android:name=".WatchBattery"
+            android:authorities="com.dmk.astrocompanion.watchbattery"
+            android:exported="true" />
+
         <receiver
             android:name=".InstallStatus"
             android:exported="false" />
