@@ -153,7 +153,7 @@ public class MainActivity extends Activity {
         if (updBusy || System.currentTimeMillis() - p.getLong("updSeen", 0) < 10 * 60_000L) return;
         new Thread(() -> {
             try {
-                Updater.Release r = Updater.latest();
+                Installer.Release r = Updater.latest();
                 p.edit().putLong("updSeen", System.currentTimeMillis()).putLong("updLatest", r.build)
                         .putString("updNotes", r.notes).apply();
                 runOnUiThread(this::showUpdate);

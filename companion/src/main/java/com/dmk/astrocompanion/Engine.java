@@ -23,86 +23,22 @@ import java.util.Map;
 
 /** Fetches weather + tide (every ~30 min) and builds the values for the face. */
 final class Engine {
-    static final String TAG = "AstroCompanion";
+    static final String TAG = Store.TAG;
 
     private Engine() {}
 
     // ------------------------------------------------------------ location
 
     /** Pune, used until the watch reports a real position (marked as approximate). */
-    static final double FALLBACK_LAT = 18.62, FALLBACK_LON = 73.80;
+    static final double FALLBACK_LAT = Where.FALLBACK_LAT, FALLBACK_LON = Where.FALLBACK_LON;
 
-    /**
-     * Best location of the watch, saved so later runs (even without permission) have one.
-     * Order: Google's fused location (comes from the phone on Wear OS), then the watch's own
-     * providers. Blocking (up to ~20 s): never call on the main thread.
-     */
     static void updateLocation(Context ctx) {
-        if (ctx.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            note(ctx, "location permission not granted");
-            return;
-        }
-        Location best = null;
-        try {
-            com.google.android.gms.location.FusedLocationProviderClient f =
-                    com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(ctx);
-            try {
-                best = com.google.android.gms.tasks.Tasks.await(f.getCurrentLocation(
-                        com.google.android.gms.location.Priority.PRIORITY_BALANCED_POWER_ACCURACY, null),
-                        20, java.util.concurrent.TimeUnit.SECONDS);
-            } catch (Throwable t) {
-                Log.w(TAG, "fused current: " + t);
-            }
-            if (best == null) {
-                best = com.google.android.gms.tasks.Tasks.await(f.getLastLocation(), 5,
-                        java.util.concurrent.TimeUnit.SECONDS);
-            }
-        } catch (Throwable t) {
-            Log.w(TAG, "fused: " + t);
-        }
-        if (best == null) {
-            try {
-                LocationManager lm = ctx.getSystemService(LocationManager.class);
-                for (String prov : lm.getProviders(true)) {
-                    Location l = lm.getLastKnownLocation(prov);
-                    if (l != null && (best == null || l.getTime() > best.getTime())) best = l;
-                }
-            } catch (Throwable t) {
-                Log.w(TAG, "location: " + t);
-            }
-        }
-        if (best != null) {
-            saveLocation(ctx, best);
-        } else {
-            note(ctx, "no position from the phone/watch yet");
-            SharedPreferences p = Store.p(ctx);
-            if (!Store.hasLocation(p)) {
-                SharedPreferences.Editor e = p.edit();
-                Store.putD(e, "lat", FALLBACK_LAT);
-                Store.putD(e, "lon", FALLBACK_LON);
-                e.putBoolean("locApprox", true);
-                e.apply();
-            }
-        }
-    }
-
-    static void note(Context ctx, String s) {
-        Store.p(ctx).edit().putString("locNote", s).apply();
-    }
-
-    static void saveLocation(Context ctx, Location l) {
-        SharedPreferences.Editor e = Store.p(ctx).edit();
-        Store.putD(e, "lat", l.getLatitude());
-        Store.putD(e, "lon", l.getLongitude());
-        e.putLong("locTime", l.getTime());
-        e.putBoolean("locApprox", false);
-        e.putString("locNote", "");
-        e.apply();
+        Where.update(ctx);
     }
 
     // ------------------------------------------------------------ network
 
-    /** Weather details and tide from Open-Meteo. Returns a short status line. */
+    /** Location, then all downloads (see Fetch). Returns a short status line. */
     static String refresh(Context ctx, boolean force) {
         updateLocation(ctx);
         SharedPreferences p = Store.p(ctx);
@@ -110,104 +46,11 @@ final class Engine {
         long now = System.currentTimeMillis();
         if (!force && now - p.getLong("wTime", 0) < 25 * 60_000L) return "fresh";
         double lat = Store.d(p, "lat", 0), lon = Store.d(p, "lon", 0);
-        StringBuilder st = new StringBuilder();
-        SharedPreferences.Editor e = p.edit();
-        try {
-            String url = String.format(Locale.US, "https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f"
-                    + "&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,"
-                    + "wind_direction_10m,pressure_msl,surface_pressure&daily=sunrise,sunset&hourly=uv_index"
-                    + "&timezone=auto&timeformat=unixtime&forecast_days=2" + Rain.PARAMS, lat, lon);
-            JSONObject j = new JSONObject(Net.get(url));
-            try {
-                Rain.save(j, e);
-            } catch (Throwable t) {
-                Log.w(TAG, "rain: " + t);
-            }
-            try {
-                JSONObject hr = j.getJSONObject("hourly");
-                JSONArray ht = hr.getJSONArray("time"), hu = hr.getJSONArray("uv_index");
-                StringBuilder ut = new StringBuilder(), uv = new StringBuilder();
-                for (int i = 0; i < ht.length(); i++) {
-                    if (hu.isNull(i)) continue;
-                    if (ut.length() > 0) {
-                        ut.append(',');
-                        uv.append(',');
-                    }
-                    ut.append(ht.getLong(i));
-                    uv.append(String.format(Locale.US, "%.1f", hu.getDouble(i)));
-                }
-                e.putString("uvT", ut.toString());
-                e.putString("uvV", uv.toString());
-            } catch (Throwable t) {
-                Log.w(TAG, "uv: " + t);
-            }
-            JSONObject cur = j.getJSONObject("current");
-            Store.putD(e, "feels", cur.optDouble("apparent_temperature", Double.NaN));
-            Store.putD(e, "hum", cur.optDouble("relative_humidity_2m", Double.NaN));
-            Store.putD(e, "wind", cur.optDouble("wind_speed_10m", Double.NaN));
-            Store.putD(e, "windDir", cur.optDouble("wind_direction_10m", Double.NaN));
-            Store.putD(e, "msl", cur.optDouble("pressure_msl", Double.NaN));
-            Store.putD(e, "ground", j.optDouble("elevation", Double.NaN));
-            JSONObject daily = j.getJSONObject("daily");
-            JSONArray rise = daily.getJSONArray("sunrise"), set = daily.getJSONArray("sunset");
-            StringBuilder r = new StringBuilder(), s = new StringBuilder();
-            for (int i = 0; i < rise.length(); i++) {
-                if (i > 0) {
-                    r.append(',');
-                    s.append(',');
-                }
-                r.append(rise.getLong(i));
-                s.append(set.getLong(i));
-            }
-            e.putString("sunrise", r.toString());
-            e.putString("sunset", s.toString());
-            e.putLong("wTime", now);
-            st.append("weather ok");
-        } catch (Throwable t) {
-            Log.w(TAG, "weather: " + t);
-            st.append("weather failed: ").append(t.getMessage());
-        }
-        try {
-            String url = String.format(Locale.US, "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=%.4f"
-                    + "&longitude=%.4f&current=us_aqi", lat, lon);
-            JSONObject cur = new JSONObject(Net.get(url)).getJSONObject("current");
-            Store.putD(e, "aqi", cur.optDouble("us_aqi", Double.NaN));
-            st.append(", air ok");
-        } catch (Throwable t) {
-            Log.w(TAG, "air: " + t);
-            st.append(", air failed");
-        }
-        try {
-            int idx = Tide.place(p, lat, lon);
-            String url = String.format(Locale.US, "https://marine-api.open-meteo.com/v1/marine?latitude=%.3f&longitude=%.3f"
-                    + "&hourly=sea_level_height_msl&timezone=auto&timeformat=unixtime&past_days=1&forecast_days=3",
-                    Tide.POS[idx][0], Tide.POS[idx][1]);
-            JSONObject hourly = new JSONObject(Net.get(url)).getJSONObject("hourly");
-            JSONArray tt = hourly.getJSONArray("time"), hh = hourly.getJSONArray("sea_level_height_msl");
-            StringBuilder a = new StringBuilder(), b = new StringBuilder();
-            for (int i = 0; i < tt.length(); i++) {
-                if (hh.isNull(i)) continue;
-                if (a.length() > 0) {
-                    a.append(',');
-                    b.append(',');
-                }
-                a.append(tt.getLong(i));
-                b.append(String.format(Locale.US, "%.3f", hh.getDouble(i)));
-            }
-            e.putString("tideT", a.toString());
-            e.putString("tideH", b.toString());
-            e.putInt("tidePlace", idx);
-            st.append(", tide ok (").append(Tide.NAMES[idx]).append(')');
-        } catch (Throwable t) {
-            Log.w(TAG, "tide: " + t);
-            st.append(", tide failed: ").append(t.getMessage());
-        }
-        st.append(", ").append(Iss.refresh(p, e));
-        st.append(", ").append(Quakes.refresh(e));
-        e.putString("status", new SimpleDateFormat("HH:mm", Locale.US).format(new Date(now)) + " " + st);
-        e.apply();
+        String st = Fetch.all(p, lat, lon, now);
+        p.edit().putString("status", new SimpleDateFormat("HH:mm", Locale.US).format(new Date(now)) + " " + st).apply();
         pushUpdates(ctx);
-        return st.toString();
+        WatchLink.publish(ctx);
+        return st;
     }
 
     static void pushUpdates(Context ctx) {
@@ -364,7 +207,7 @@ final class Engine {
         if (loc) {
             double saz = Astro.sunAzimuth(now, lat, lon);
             StringBuilder ar = new StringBuilder("SUN ").append(Math.round(saz) % 360).append('°').append(Astro.dir8(saz));
-            if (!Double.isNaN(head))
+            if (!Double.isNaN(head) && p.getBoolean(Link.K_COMPASS, true))
                 ar.append(" · FACING ").append(Math.round(head) % 360).append('°').append(Astro.dir8(head));
             v.put("arcr", ar.toString());
         }

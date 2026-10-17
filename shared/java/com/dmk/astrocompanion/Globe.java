@@ -61,8 +61,16 @@ final class Globe {
     static synchronized Bitmap render(Context ctx, double lat0, double lon0, long now, double sunFrac, Iss.Orbit iss) {
         if (sCache != null && now - sCacheAt < 2 * 60_000L) return sCache;
         // The globe fills the whole round face; the day side is dimmed so the text on top reads well.
-        final int size = 450;
-        final double dim = 0.55;
+        sCache = draw(ctx, 450, 0.55, lat0, lon0, now, iss);
+        sCacheAt = now;
+        return sCache;
+    }
+
+    /**
+     * The globe at any size in pixels (the phone shows it big). dim below 1 darkens the day side.
+     * Overlays are drawn in face units (450 across) and scaled.
+     */
+    static Bitmap draw(Context ctx, int size, double dim, double lat0, double lon0, long now, Iss.Orbit iss) {
         Bitmap bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
         if (!load(ctx)) return bmp;
         int[] px = new int[size * size];
@@ -108,6 +116,10 @@ final class Globe {
         }
         bmp.setPixels(px, 0, size, 0, 0, size, size);
         Canvas cv = new Canvas(bmp);
+        cv.scale(size / 450f, size / 450f);
+        cx = 225;
+        cy = 225;
+        r = 225;
         // the sun: a soft glow over the place where it is straight overhead (when on our side)
         float[] sp = project(sd / RAD, sl / RAD, lat0, lon0, cx, cy, r);
         if (sp != null) {
@@ -129,8 +141,6 @@ final class Globe {
         me.setStrokeWidth(2.5f);
         me.setColor(Color.rgb(255, 140, 60));
         cv.drawCircle((float) cx, (float) cy, 5, me);
-        sCache = bmp;
-        sCacheAt = now;
         return bmp;
     }
 
@@ -174,7 +184,7 @@ final class Globe {
     }
 
     /** The Moon over the place where it's straight overhead, with its current phase (as seen from the north). */
-    private static void drawMoon(Canvas cv, float x, float y, float r, double age) {
+    static void drawMoon(Canvas cv, float x, float y, float r, double age) {
         Paint glow = new Paint(Paint.ANTI_ALIAS_FLAG);
         glow.setShader(new android.graphics.RadialGradient(x, y, r * 2.3f, Color.argb(90, 200, 215, 255),
                 Color.argb(0, 200, 215, 255), android.graphics.Shader.TileMode.CLAMP));

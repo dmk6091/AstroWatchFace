@@ -23,7 +23,7 @@ public class Panel extends BroadcastReceiver {
         int chosen = p.getInt("panel", TIDE);
         if (chosen < 0 || chosen >= COUNT) chosen = TIDE;
         boolean recentTap = now - p.getLong("panelTap", 0) < 20 * 60_000L;
-        if (!recentTap && Rain.soon(p, now)) return RAIN;
+        if (!recentTap && p.getBoolean(Link.K_RAIN, true) && Rain.soon(p, now)) return RAIN;
         return chosen;
     }
 

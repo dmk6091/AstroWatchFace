@@ -36,6 +36,14 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
+    // science + downloads shared with the phone app
+    sourceSets {
+        main {
+            java.srcDirs += ['../shared/java']
+            assets.srcDirs += ['../shared/assets']
+        }
+    }
+
     lint {
         abortOnError false
         checkReleaseBuilds false
@@ -47,4 +55,6 @@ dependencies {
     implementation 'androidx.work:work-runtime:2.9.1'
     // Location from the phone (Wear OS gets it through Google's fused location service)
     implementation 'com.google.android.gms:play-services-location:21.3.0'
+    // link with the phone app
+    implementation 'com.google.android.gms:play-services-wearable:18.2.0'
 }

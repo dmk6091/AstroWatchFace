@@ -61,7 +61,7 @@ final class Quakes {
             e.putLong("qTime", System.currentTimeMillis());
             return "quakes ok (" + n + ")";
         } catch (Throwable t) {
-            Log.w(Engine.TAG, "quakes: " + t);
+            Log.w(Store.TAG, "quakes: " + t);
             return "quakes failed";
         }
     }

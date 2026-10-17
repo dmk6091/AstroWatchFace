@@ -5,6 +5,8 @@ import android.content.SharedPreferences;
 
 /** Everything the companion remembers between runs. */
 final class Store {
+    static final String TAG = "AstroCompanion";
+
     private Store() {}
 
     static SharedPreferences p(Context c) {

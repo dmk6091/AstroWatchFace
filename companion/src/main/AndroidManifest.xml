@@ -45,6 +45,25 @@
             </intent-filter>
         </receiver>
 
+        <!-- Android's installer answers (updates) -->
+        <receiver
+            android:name=".InstallStatus"
+            android:exported="false" />
+
+        <!-- The phone app: settings, refresh, update, APK files; status back to the phone -->
+        <service
+            android:name=".WatchLink"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <data android:scheme="wear" android:host="*" android:pathPrefix="/astro" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.CHANNEL_EVENT" />
+                <data android:scheme="wear" android:host="*" android:pathPrefix="/astro" />
+            </intent-filter>
+        </service>
+
         <!-- Tap on the face's bottom panel: next screen (tide / quakes / rain) -->
         <receiver
             android:name=".Panel"

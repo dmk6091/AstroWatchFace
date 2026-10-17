@@ -119,7 +119,7 @@ final class Iss {
             e.putLong("tleTime", now);
             return "iss ok";
         } catch (Throwable t) {
-            Log.w(Engine.TAG, "iss: " + t);
+            Log.w(Store.TAG, "iss: " + t);
             return "iss failed";
         }
     }
