@@ -1,0 +1,56 @@
+// Astro for the phone: the same sky and earth data, big, plus controls for the watch.
+// Same package name and key as the watch's Astro, so Wear OS links the two.
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.dmk.astrocompanion'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.dmk.astrocompanion'
+        minSdk 30
+        targetSdk 35
+        versionCode Integer.parseInt(System.getenv('GITHUB_RUN_NUMBER') ?: '1')
+        versionName '1.' + (System.getenv('GITHUB_RUN_NUMBER') ?: 'local')
+    }
+
+    signingConfigs {
+        release {
+            storeFile file('../watchface/release.jks')
+            storePassword 'astrowatchface'
+            keyAlias 'astro'
+            keyPassword 'astrowatchface'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs += ['../shared/java']
+            assets.srcDirs += ['../shared/assets']
+        }
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}
+
+dependencies {
+    implementation 'com.google.android.gms:play-services-location:21.3.0'
+    implementation 'com.google.android.gms:play-services-wearable:18.2.0'
+}

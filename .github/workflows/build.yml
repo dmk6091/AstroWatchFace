@@ -36,6 +36,7 @@ jobs:
           path: |
             watchface/build/outputs/apk/release/*.apk
             companion/build/outputs/apk/release/*.apk
+            phone/build/outputs/apk/release/*.apk
       - name: Publish as the "latest" release
         if: github.ref == 'refs/heads/main'
         env:
@@ -44,11 +45,12 @@ jobs:
         run: |
           cp watchface/build/outputs/apk/release/*.apk AstroWatchFace.apk
           cp companion/build/outputs/apk/release/*.apk AstroCompanion.apk
+          cp phone/build/outputs/apk/release/*.apk AstroPhone.apk
           printf 'build=%s\n%s\n' "$GITHUB_RUN_NUMBER" "$MSG" > notes.txt
           R=${{ github.repository }}
           if gh release view latest -R "$R" >/dev/null 2>&1; then
-            gh release upload latest AstroWatchFace.apk AstroCompanion.apk --clobber -R "$R"
+            gh release upload latest AstroWatchFace.apk AstroCompanion.apk AstroPhone.apk --clobber -R "$R"
             gh release edit latest --notes-file notes.txt -R "$R"
           else
-            gh release create latest AstroWatchFace.apk AstroCompanion.apk --title "Latest build" --notes-file notes.txt -R "$R"
+            gh release create latest AstroWatchFace.apk AstroCompanion.apk AstroPhone.apk --title "Latest build" --notes-file notes.txt -R "$R"
           fi

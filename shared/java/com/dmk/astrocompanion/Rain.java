@@ -135,6 +135,26 @@ final class Rain {
         v.put("rend", stop > 0 ? "DRY BY " + hm(stop) : "WET AT " + hm(last));
     }
 
+    /** Rain rate (mm/h) for the next 8 quarter hours from now; NaN where unknown. */
+    static double[] next2h(SharedPreferences p, long now) {
+        double[] out = new double[8];
+        try {
+            long[] t = times(p);
+            double[] a = amounts(p, t.length);
+            for (int i = 0; i < 8; i++) {
+                double x = at(t, a, now + i * Q + Q / 2);
+                out[i] = Double.isNaN(x) ? Double.NaN : x * 4;
+            }
+        } catch (Exception e) {
+            java.util.Arrays.fill(out, Double.NaN);
+        }
+        return out;
+    }
+
+    static boolean wet(double rateMmH) {
+        return !Double.isNaN(rateMmH) && rateMmH >= WET * 4;
+    }
+
     /** Next 2 hours as 8 bars (428 x 64, same plot area as the tide curve), now on the left. */
     static Bitmap graph(SharedPreferences p, long now) {
         final int w = 428, h = 64;

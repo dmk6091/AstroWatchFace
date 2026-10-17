@@ -26,6 +26,11 @@ Parts:
 * `companion/` – "Astro" app on the watch. Complications: *Astro data* (one long text with
   fixed-width fields), *Astro globe* and *Astro tide graph* (pictures). Weather details, AQI and tide
   from Open-Meteo every 30 min; sun / moon calculated on the watch; altitude from the barometer.
+* `phone/` – "Astro" for the phone (same package name and key, so Wear OS links it to the watch's Astro):
+  *Sky & Earth* (globe with quakes / ISS / moon, weather, rain next 2 h, tide, sun / moon / ISS passes,
+  pressure, quakes list) and *Watch* (status, tide place, panel, switches, refresh, update the watch from
+  GitHub or by sending the files from the phone). Updates itself from the same release (`AstroPhone.apk`).
+* `shared/` – science and downloads used by both apps (Astro, Iss, Tide, Quakes, Rain, Globe, Fetch, Installer…).
 * `tools/globe.py` – the globe maths (the companion's `Globe.java` is the same in Java).
 
 Every push builds on GitHub Actions, validates the XML with Google's validator and publishes both

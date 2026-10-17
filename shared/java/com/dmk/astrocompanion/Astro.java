@@ -51,6 +51,33 @@ final class Astro {
         return ((az + 180) % 360 + 360) % 360;
     }
 
+    /** Sun altitude in degrees above the horizon (negative below). */
+    static double sunAltitude(long ms, double lat, double lon) {
+        double lw = RAD * -lon, phi = RAD * lat, d = toDays(ms);
+        double[] c = sunCoords(d);
+        double h = siderealTime(d, lw) - c[1];
+        return Math.toDegrees(altitude(h, phi, c[0]));
+    }
+
+    /** Moon azimuth in degrees from north (0..360). */
+    static double moonAzimuth(long ms, double lat, double lon) {
+        double lw = RAD * -lon, phi = RAD * lat, d = toDays(ms);
+        double ml = RAD * (218.316 + 13.176396 * d);
+        double mm = RAD * (134.963 + 13.064993 * d);
+        double f = RAD * (93.272 + 13.229350 * d);
+        double l = ml + RAD * 6.289 * Math.sin(mm);
+        double b = RAD * 5.128 * Math.sin(f);
+        double ra = rightAscension(l, b), dec = declination(l, b);
+        double h = siderealTime(d, lw) - ra;
+        double az = Math.toDegrees(azimuth(h, phi, dec));
+        return ((az + 180) % 360 + 360) % 360;
+    }
+
+    /** Fraction of the moon's disc that is lit (0..1), from its age. */
+    static double moonLit(long ms) {
+        return (1 - Math.cos(2 * Math.PI * moonAge(ms) / 29.530589)) / 2;
+    }
+
     /** Geocentric altitude of the moon in degrees. */
     static double moonAltitude(long ms, double lat, double lon) {
         double lw = RAD * -lon, phi = RAD * lat, d = toDays(ms);

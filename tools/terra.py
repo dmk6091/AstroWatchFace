@@ -3,7 +3,7 @@
 Writes background art, moon phases, weather icons, watchface.xml, the preview, and the
 companion's FieldSpec.java (the fixed-width field layout both sides share).
 usage: terra.py <watchface/src/main> <dir with Barlow ttf files>"""
-import math, os, random, re, sys
+import math, os, random, re, shutil, sys
 from xml.sax.saxutils import quoteattr
 from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageChops
 
@@ -723,4 +723,16 @@ for (x, y, txt, size, color, font, align) in PREVIEW:
     pd.text((x, y), txt, font=pil_font(font, size), fill=hexrgb(color), anchor=anchor)
 pd.arc((2, 2, 448, 448), -90, -90 + 280, fill=hexrgb('#5FA2F5'), width=2)
 prev.convert('RGB').save(os.path.join(RES, 'drawable-nodpi', 'preview.png'), optimize=True)
+
+# ---------------------------------------------------------------- the phone app reuses the art
+PHONE = os.path.join(HERE, '..', 'phone', 'src', 'main', 'res')
+if os.path.isdir(os.path.dirname(PHONE)):
+    for d_ in ('drawable-nodpi', 'font'):
+        os.makedirs(os.path.join(PHONE, d_), exist_ok=True)
+    for f_ in sorted(os.listdir(os.path.join(RES, 'drawable-nodpi'))):
+        if f_.startswith('wx_'):
+            shutil.copy(os.path.join(RES, 'drawable-nodpi', f_), os.path.join(PHONE, 'drawable-nodpi', f_))
+    shutil.copy(os.path.join(RES, 'drawable-nodpi', 'preview.png'), os.path.join(PHONE, 'drawable-nodpi', 'watch_preview.png'))
+    for name in FONT_FILES:
+        shutil.copy(os.path.join(RES, 'font', name + '.ttf'), os.path.join(PHONE, 'font', name + '.ttf'))
 print('ok')
