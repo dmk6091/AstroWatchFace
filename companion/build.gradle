@@ -45,4 +45,6 @@ android {
 dependencies {
     implementation 'androidx.wear.watchface:watchface-complications-data-source:1.2.1'
     implementation 'androidx.work:work-runtime:2.9.1'
+    // Location from the phone (Wear OS gets it through Google's fused location service)
+    implementation 'com.google.android.gms:play-services-location:21.3.0'
 }

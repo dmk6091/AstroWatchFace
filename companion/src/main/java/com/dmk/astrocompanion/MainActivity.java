@@ -113,15 +113,25 @@ public class MainActivity extends Activity {
         if (status == null) return;
         new Thread(() -> {
             SharedPreferences p = Store.p(this);
-            Map<String, String> v = Engine.values(this);
+            Map<String, String> v = new java.util.HashMap<String, String>() {
+                @Override
+                public String get(Object k) {
+                    String s = super.get(k);
+                    return s == null ? "--" : s;
+                }
+            };
+            v.putAll(Engine.values(this));
             StringBuilder sb = new StringBuilder();
             sb.append(p.getString("status", "not updated yet")).append('\n');
             if (Store.hasLocation(p)) {
-                sb.append(String.format(java.util.Locale.US, "Location %.3f, %.3f\n",
-                        Store.d(p, "lat", 0), Store.d(p, "lon", 0)));
+                sb.append(String.format(java.util.Locale.US, "Location %.3f, %.3f%s\n",
+                        Store.d(p, "lat", 0), Store.d(p, "lon", 0),
+                        p.getBoolean("locApprox", false) ? " (approx: Pune)" : ""));
             } else {
                 sb.append("No location yet\n");
             }
+            String note = p.getString("locNote", "");
+            if (!note.isEmpty()) sb.append(note).append('\n');
             sb.append("Sun ").append(v.get("srise")).append(" - ").append(v.get("sset"))
                     .append("  Moon ").append(v.get("mrise")).append(" - ").append(v.get("mset")).append('\n');
             sb.append("Elev ").append(v.get("elev")).append(" m  Baro ").append(v.get("baro")).append(" hPa\n");
@@ -140,20 +150,14 @@ public class MainActivity extends Activity {
                     Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
             return;
         }
-        // a fresh fix, saved for the background runs
-        try {
-            LocationManager lm = getSystemService(LocationManager.class);
-            String prov = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER) ? LocationManager.NETWORK_PROVIDER
-                    : LocationManager.GPS_PROVIDER;
-            lm.getCurrentLocation(prov, null, getMainExecutor(), l -> {
-                if (l != null) {
-                    Engine.saveLocation(this, l);
-                    refreshStatus();
-                }
-            });
-        } catch (Throwable ignored) {
-        }
-        Engine.updateLocation(this);
+        // a fresh fix (from the phone), saved for the background runs
+        new Thread(() -> {
+            boolean had = Store.hasLocation(Store.p(this)) && !Store.p(this).getBoolean("locApprox", false);
+            Engine.updateLocation(this);
+            boolean has = Store.hasLocation(Store.p(this)) && !Store.p(this).getBoolean("locApprox", false);
+            if (has && !had) Engine.refresh(this, true);
+            runOnUiThread(this::refreshStatus);
+        }).start();
     }
 
     @Override
