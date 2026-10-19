@@ -121,6 +121,7 @@ final class Engine {
             v.put("mset", hm(mt[1]));
             double az = Astro.sunAzimuth(now, lat, lon);
             v.put("az", Math.round(az) + "° " + Astro.dir8(az));
+            v.put("phase", Astro.sunPhase(now, lat, lon));
         }
         long sr = todayFrom(p.getString("sunrise", ""), day0, day1);
         long ss = todayFrom(p.getString("sunset", ""), day0, day1);

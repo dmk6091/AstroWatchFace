@@ -309,8 +309,7 @@ final class Globe {
             }
             if (next < 0) return null;
             long m = (next - now) / 60_000;
-            String phase = Astro.sunPhase(now, lat0, lon0);
-            return phase + (day ? " · SUNSET IN " : " · SUNRISE IN ") + (m / 60 > 0 ? (m / 60) + " h " : "") + (m % 60) + " m";
+            return (day ? "SUNSET IN " : "SUNRISE IN ") + (m / 60 > 0 ? (m / 60) + " h " : "") + (m % 60) + " m";
         } catch (Throwable t) {
             return null;
         }

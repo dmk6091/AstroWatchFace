@@ -555,6 +555,7 @@ def ARC(name, width, mid, sample, size=15, color=SOFT, span=52):
 
 
 D(225, 130, 'arcl', 40, '%s', 17, WHITE, 'CENTER', 330, sample='UV 6 · 1008 hPa (+1.2) · Kp 3', empty='')
+ARC('arcp', 16, 276, 'GOLDEN HOUR', size=16, color='#F2B33D', span=56)
 ARC('arcr', 26, 75, 'SUN 285°W · FACING 40°NE', size=13, span=44)
 TOTAL = sum(f[1] for f in FIELDS)     # + 1, 2 or 3 marks at the end: which screen (see Engine.pack)
 
