@@ -309,7 +309,10 @@ final class Globe {
             }
             if (next < 0) return null;
             long m = (next - now) / 60_000;
-            return (day ? "DAY · SUNSET IN " : "NIGHT · SUNRISE IN ") + (m / 60 > 0 ? (m / 60) + " h " : "") + (m % 60) + " m";
+            double alt = Astro.sunAltitude(now, lat0, lon0);
+            String phase = alt > -0.833 ? "DAY" : alt > -6 ? "CIVIL TWILIGHT" : alt > -12 ? "NAUTICAL TWILIGHT"
+                    : alt > -18 ? "ASTRO TWILIGHT" : "NIGHT";
+            return phase + (day ? " · SUNSET IN " : " · SUNRISE IN ") + (m / 60 > 0 ? (m / 60) + " h " : "") + (m % 60) + " m";
         } catch (Throwable t) {
             return null;
         }

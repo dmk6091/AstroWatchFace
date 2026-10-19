@@ -121,6 +121,10 @@ final class Engine {
             v.put("mset", hm(mt[1]));
             double az = Astro.sunAzimuth(now, lat, lon);
             v.put("az", Math.round(az) + "° " + Astro.dir8(az));
+            long[] ta = Astro.sunCrossings(day0, lat, lon, -18), tn = Astro.sunCrossings(day0, lat, lon, -12),
+                    tc = Astro.sunCrossings(day0, lat, lon, -6);
+            v.put("dawn", "A" + hm(ta[0]) + " N" + hm(tn[0]) + " C" + hm(tc[0]));
+            v.put("dusk", "C" + hm(tc[1]) + " N" + hm(tn[1]) + " A" + hm(ta[1]));
         }
         long sr = todayFrom(p.getString("sunrise", ""), day0, day1);
         long ss = todayFrom(p.getString("sunset", ""), day0, day1);

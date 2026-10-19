@@ -508,6 +508,8 @@ QRED = '#FF5440'
 
 
 
+D(147, 104, 'dawn', 22, '%s', 14, '#B9C3D3', 'CENTER', 150, sample='A04:49 N05:19 C05:49', empty='')
+D(303, 104, 'dusk', 22, '%s', 14, '#B9C3D3', 'CENTER', 150, sample='C18:31 N19:01 A19:31', empty='')
 D(142, 82, 'srise', 5, '%s', 19, WHITE, 'START', 70, sample='06:18', empty='--:--')
 D(294, 82, 'sset', 5, '%s', 19, WHITE, 'START', 70, sample='18:24', empty='--:--')
 D(70, 305, 'hum', 4, '%s', 21, WHITE, 'START', 80, sample='72%')

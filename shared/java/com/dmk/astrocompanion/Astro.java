@@ -91,6 +91,20 @@ final class Astro {
         return Math.toDegrees(altitude(h, phi, dec));
     }
 
+    /** Times within 24 h from start when the Sun climbs through / sinks through `deg` degrees: {morning, evening}, -1 if none. */
+    static long[] sunCrossings(long start, double lat, double lon, double deg) {
+        final long step = 5 * 60_000L;
+        long up = -1, down = -1;
+        double prev = sunAltitude(start, lat, lon) - deg;
+        for (long t = start + step; t <= start + 86_400_000L; t += step) {
+            double cur = sunAltitude(t, lat, lon) - deg;
+            if (prev < 0 && cur >= 0 && up < 0) up = t - step + (long) (step * (-prev / (cur - prev)));
+            if (prev >= 0 && cur < 0 && down < 0) down = t - step + (long) (step * (prev / (prev - cur)));
+            prev = cur;
+        }
+        return new long[]{up, down};
+    }
+
     /** Moonrise and moonset (epoch ms) within 24 h from start, or -1 when there is none. */
     static long[] moonTimes(long start, double lat, double lon) {
         final double h0 = 0.133; // geocentric altitude at rise/set (parallax, refraction, radius)
