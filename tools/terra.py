@@ -180,7 +180,7 @@ for i, k in enumerate(WX):
 # ---------------------------------------------------------------- layout (450 x 450 face units)
 GLOBE = (225, 225, 450)            # the globe fills the whole round face (image 450 px)
 GLOBE_DIM = 0.55                   # day side dimmed so the text on top stays readable
-GRAPH = (100, 352, 250, 37)        # bottom picture slot: x, y, w, h  (image 428 x 64)
+GRAPH = (100, 347, 250, 30)        # bottom picture slot: x, y, w, h  (image 428 x 64)
 
 
 # ---------------------------------------------------------------- background art
@@ -307,15 +307,15 @@ def wave():
     return im
 
 
-d.polygon([P(326, 276), P(321, 285), P(331, 285)], fill=hexrgb('#C9B3FF'))      # moonrise: up
-d.polygon([P(372, 285), P(367, 277), P(377, 277)], fill=hexrgb('#C9B3FF'))      # moonset: down
+d.polygon([P(326, 274), P(321, 283), P(331, 283)], fill=hexrgb('#C9B3FF'))      # moonrise: up
+d.polygon([P(372, 283), P(367, 275), P(377, 275)], fill=hexrgb('#C9B3FF'))      # moonset: down
 icon(sun_half(GOLD), 128, 82, 22)
 icon(sun_half('#F28B3D'), 280, 82, 22)
 icon(umbrella(), 52, 275, 22)
 icon(drop(), 52, 305, 20)
 icon(leaf(), 52, 335, 20)
-icon(mountain(), 318, 305, 24)
-icon(hourglass(), 318, 331, 20)
+icon(mountain(), 318, 301, 24)
+icon(hourglass(), 318, 325, 20)
 label('AQI', 72, 335, 12, GREEN, anchor='lm')
 
 
@@ -513,29 +513,29 @@ D(294, 82, 'sset', 5, '%s', 19, WHITE, 'START', 70, sample='18:24', empty='--:--
 D(70, 305, 'hum', 4, '%s', 21, WHITE, 'START', 80, sample='72%')
 D(98, 335, 'aqi', 4, '%s', 21, WHITE, 'START', 60, sample='54')
 D(358, 258, 'mage', 6, '%s', 16, SOFT, 'CENTER', 90, sample='6.2 d')
-D(334, 281, 'mrise', 5, '%s', 15, '#C9B3FF', 'START', 44, sample='12:05', empty='--:--')
-D(380, 281, 'mset', 5, '%s', 15, '#C9B3FF', 'START', 44, sample='23:48', empty='--:--')
-D(334, 305, 'alt', 5, '%s m', 21, WHITE, 'START', 90, sample='560')
-D(334, 331, 'dlen', 7, '%s', 19, WHITE, 'START', 90, sample='11h 41m', empty='--h --m')
+D(334, 279, 'mrise', 5, '%s', 15, '#C9B3FF', 'START', 44, sample='12:05', empty='--:--')
+D(380, 279, 'mset', 5, '%s', 15, '#C9B3FF', 'START', 44, sample='23:48', empty='--:--')
+D(334, 301, 'alt', 5, '%s m', 21, WHITE, 'START', 90, sample='560')
+D(334, 325, 'dlen', 7, '%s', 19, WHITE, 'START', 90, sample='11h 41m', empty='--h --m')
 TP, QP, RP = PANEL['tide'], PANEL['quake'], PANEL['rain']
-D(108, 400, 'tplace', 10, '%s', 16, ICE, 'START', 110, sample='MUMBAI', empty='TIDE', to=TP)
-D(250, 400, 'tnow', 5, '%s m', 17, WHITE, 'CENTER', 70, sample='1.8', to=TP)
-D(338, 400, 'tstate', 7, '%s', 14, '#5BA8F2', 'END', 70, sample='RISING', empty='', to=TP)
-D(172, 418, 'hit', 5, 'HIGH %s', 15, SOFT, 'CENTER', 100, sample='14:32', empty='--:--', to=TP)
-D(282, 418, 'lot', 5, 'LOW %s', 15, SOFT, 'CENTER', 100, sample='21:48', empty='--:--', to=TP)
-D(225, 436, 'tq', 26, '%s', 14, QRED, 'CENTER', 190, sample='M5.2 VANUATU · 3h ago', empty='', to=TP)
+D(108, 390, 'tplace', 10, '%s', 16, ICE, 'START', 110, sample='MUMBAI', empty='TIDE', to=TP)
+D(250, 390, 'tnow', 5, '%s m', 17, WHITE, 'CENTER', 70, sample='1.8', to=TP)
+D(338, 390, 'tstate', 7, '%s', 14, '#5BA8F2', 'END', 70, sample='RISING', empty='', to=TP)
+D(172, 407, 'hit', 5, 'HIGH %s', 15, SOFT, 'CENTER', 100, sample='14:32', empty='--:--', to=TP)
+D(282, 407, 'lot', 5, 'LOW %s', 15, SOFT, 'CENTER', 100, sample='21:48', empty='--:--', to=TP)
+D(225, 423, 'tq', 26, '%s', 14, QRED, 'CENTER', 190, sample='M5.2 VANUATU · 3h ago', empty='', to=TP)
 D(225, 298, 'iss', 10, 'ISS %s', 15, ICE, 'CENTER', 130, sample='19:42 58°', empty='--')
 # quakes: strongest of the last 24 h, how long ago, how many, nearest to you
-D(110, 400, 'qmag', 5, '%s', 17, QRED, 'START', 44, to=QP)
-D(148, 400, 'qplace', 16, '%s', 15, WHITE, 'START', 140, to=QP)
-D(340, 400, 'qago', 7, '%s', 14, SOFT, 'END', 60, to=QP)
-D(172, 418, 'qcnt', 10, '%s', 15, SOFT, 'CENTER', 104, to=QP)
-D(280, 418, 'qnear', 14, '%s', 15, SOFT, 'CENTER', 124, to=QP)
+D(110, 390, 'qmag', 5, '%s', 17, QRED, 'START', 44, to=QP)
+D(148, 390, 'qplace', 16, '%s', 15, WHITE, 'START', 140, to=QP)
+D(340, 390, 'qago', 7, '%s', 14, SOFT, 'END', 60, to=QP)
+D(172, 407, 'qcnt', 10, '%s', 15, SOFT, 'CENTER', 104, to=QP)
+D(280, 407, 'qnear', 14, '%s', 15, SOFT, 'CENTER', 124, to=QP)
 # rain: when it starts, how heavy, how much at most, when it stops
-D(108, 400, 'rhead', 15, '%s', 17, TEAL, 'START', 176, to=RP)
-D(340, 400, 'rlvl', 8, '%s', 14, SOFT, 'END', 80, to=RP)
-D(172, 418, 'rmax', 15, '%s', 15, SOFT, 'CENTER', 124, to=RP)
-D(282, 418, 'rend', 12, '%s', 15, SOFT, 'CENTER', 112, to=RP)
+D(108, 390, 'rhead', 15, '%s', 17, TEAL, 'START', 176, to=RP)
+D(340, 390, 'rlvl', 8, '%s', 14, SOFT, 'END', 80, to=RP)
+D(172, 407, 'rmax', 15, '%s', 15, SOFT, 'CENTER', 124, to=RP)
+D(282, 407, 'rend', 12, '%s', 15, SOFT, 'CENTER', 112, to=RP)
 # text along the bezel in the empty strips at 9 and 3 o'clock (reads upward on the left, downward on
 # the right, letters' tops toward the edge). Angles: 0 = 12 o'clock, clockwise.
 ARCS = []
@@ -555,7 +555,7 @@ def ARC(name, width, mid, sample, size=15, color=SOFT, span=52):
 
 
 D(225, 130, 'arcl', 40, '%s', 17, WHITE, 'CENTER', 330, sample='UV 6 · 1008 hPa (+1.2) · Kp 3', empty='')
-ARC('arcr', 26, 83, 'SUN 285°W · FACING 40°NE')
+ARC('arcr', 26, 75, 'SUN 285°W · FACING 40°NE', size=13, span=44)
 TOTAL = sum(f[1] for f in FIELDS)     # + 1, 2 or 3 marks at the end: which screen (see Engine.pack)
 
 gx_, gy_, gw_, gh_ = GRAPH
@@ -572,7 +572,7 @@ def ptxt(x, y, s, size, color, align):
 
 for name, ic, i, ends in (('tide', 'ic_wave', 0, None), ('quake', 'ic_quake', 1, ('-24h', 'NOW')),
                           ('rain', 'ic_rain', 2, ('NOW', '+2h'))):
-    PANEL[name].insert(0, pimg(ic, 92 - 11, 400 - 11, 22, 22) + pimg('dots_%d' % i, 205, 339, 40, 10))
+    PANEL[name].insert(0, pimg(ic, 92 - 11, 390 - 11, 22, 22) + pimg('dots_%d' % i, 205, 336, 40, 10))
     if ends:
         PANEL[name].append(ptxt(gx_ - 2, gy_ + gh_ - 3, ends[0], 10, DIM, 'END')
                            + ptxt(gx_ + gw_ + 2, gy_ + gh_ - 3, ends[1], 10, DIM, 'START'))
@@ -583,13 +583,13 @@ panel_group = ('<Group name="panel" x="0" y="0" width="450" height="450"><Condit
                '<Default>%s</Default></Condition></Group>') % (TOTAL + 2, TOTAL + 3, ''.join(PANEL['quake']),
                                                                 ''.join(PANEL['rain']), ''.join(PANEL['tide']))
 BOTTOM.append(panel_group)
-EMPTY_B.insert(0, pimg('ic_wave', 92 - 11, 400 - 11, 22, 22) + pimg('dots_0', 205, 339, 40, 10))
+EMPTY_B.insert(0, pimg('ic_wave', 92 - 11, 390 - 11, 22, 22) + pimg('dots_0', 205, 336, 40, 10))
 
 # The renderer draws a slot only inside its bounding area, and a tap goes to the slot with the lowest id
 # among those under the finger. So the companion's text feeds two slots:
 #   slot 3: everything above the bottom panel (no taps of its own: the globe, id 1, is lower)
 #   slot 0: the bottom panel + ISS line; lowest id, so a tap there always reaches it (next screen)
-SPLIT = 338
+SPLIT = 336
 
 
 def data_slot_xml(slot_id, name, top, height, comp, empty):
@@ -742,7 +742,7 @@ mi = Image.open(os.path.join(RES, 'drawable-nodpi', 'moon_09.png')).resize((msz,
 prev.alpha_composite(mi, (358 - msz // 2, 198 - msz // 2))
 wi = Image.open(os.path.join(RES, 'drawable-nodpi', 'wx_d_14.png')).resize((isz, isz), Image.LANCZOS)
 prev.alpha_composite(wi, (92 - isz // 2, 196 - isz // 2))
-for res_, (x_, y_, w_, h_) in (('ic_wave', (81, 389, 22, 22)), ('dots_0', (205, 339, 40, 10))):
+for res_, (x_, y_, w_, h_) in (('ic_wave', (81, 379, 22, 22)), ('dots_0', (205, 336, 40, 10))):
     im_ = Image.open(os.path.join(RES, 'drawable-nodpi', res_ + '.png')).convert('RGBA').resize((w_, h_), Image.LANCZOS)
     prev.alpha_composite(im_, (x_, y_))
 def arc_text(img, text, wff_mid, r_base, size, color):
