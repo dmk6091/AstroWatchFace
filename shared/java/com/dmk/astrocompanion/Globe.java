@@ -140,7 +140,7 @@ final class Globe {
         if (mp != null) drawMoon(cv, mp[0], mp[1], 11, Astro.moonAge(now));
         if (iss != null) drawIss(cv, iss, now, lat0, lon0, cx, cy, r);
         drawCities(cv, now, lat0, lon0);
-        drawDial(cv, now, lat0, lon0, iss);
+        // sky dial removed from the face (drawDial kept for later)
         Paint me = new Paint(Paint.ANTI_ALIAS_FLAG);
         me.setStyle(Paint.Style.STROKE);
         me.setStrokeWidth(2.5f);
