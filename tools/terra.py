@@ -523,7 +523,6 @@ D(250, 390, 'tnow', 5, '%s m', 17, WHITE, 'CENTER', 70, sample='1.8', to=TP)
 D(338, 390, 'tstate', 7, '%s', 14, '#5BA8F2', 'END', 70, sample='RISING', empty='', to=TP)
 D(172, 407, 'hit', 5, 'HIGH %s', 15, SOFT, 'CENTER', 100, sample='14:32', empty='--:--', to=TP)
 D(282, 407, 'lot', 5, 'LOW %s', 15, SOFT, 'CENTER', 100, sample='21:48', empty='--:--', to=TP)
-D(225, 423, 'tq', 26, '%s', 14, QRED, 'CENTER', 190, sample='M5.2 VANUATU · 3h ago', empty='', to=TP)
 D(225, 298, 'iss', 10, 'ISS %s', 15, ICE, 'CENTER', 130, sample='19:42 58°', empty='--')
 # quakes: strongest of the last 24 h, how long ago, how many, nearest to you
 D(110, 390, 'qmag', 5, '%s', 17, QRED, 'START', 44, to=QP)

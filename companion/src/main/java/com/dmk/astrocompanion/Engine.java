@@ -224,9 +224,6 @@ final class Engine {
         v.put("panel", String.valueOf(Panel.checkAuto(ctx, p, now)));
         Quakes.values(p, v, now, loc ? lat : FALLBACK_LAT, loc ? lon : FALLBACK_LON);
         Rain.values(p, v, now);
-        String qm = v.get("qmag"), qp = v.get("qplace"), qa = v.get("qago");
-        if (qm != null && !qm.isEmpty()) v.put("tq", qm + " " + qp + " · " + qa);
-        else if (qp != null) v.put("tq", qp);
 
         // tide
         Tide.Series s = Tide.Series.load(p);
