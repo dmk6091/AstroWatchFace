@@ -91,18 +91,39 @@ final class Astro {
         return Math.toDegrees(altitude(h, phi, dec));
     }
 
-    /** Times within 24 h from start when the Sun climbs through / sinks through `deg` degrees: {morning, evening}, -1 if none. */
-    static long[] sunCrossings(long start, double lat, double lon, double deg) {
-        final long step = 5 * 60_000L;
-        long up = -1, down = -1;
-        double prev = sunAltitude(start, lat, lon) - deg;
-        for (long t = start + step; t <= start + 86_400_000L; t += step) {
-            double cur = sunAltitude(t, lat, lon) - deg;
-            if (prev < 0 && cur >= 0 && up < 0) up = t - step + (long) (step * (-prev / (cur - prev)));
-            if (prev >= 0 && cur < 0 && down < 0) down = t - step + (long) (step * (prev / (prev - cur)));
-            prev = cur;
+    /**
+     * Where the Sun is in its day, as a short name: SOLAR NOON / SOLAR MIDNIGHT (within 20 min of the
+     * highest / lowest point), SUNRISE / SUNSET, GOLDEN HOUR, BLUE HOUR, CIVIL / NAUTICAL / ASTRO DAWN
+     * and DUSK, MORNING, AFTERNOON, NIGHT.
+     */
+    static String sunPhase(long now, double lat, double lon) {
+        double alt = sunAltitude(now, lat, lon);
+        boolean rising = sunAltitude(now + 300_000L, lat, lon) > alt;
+        // highest and lowest point within +-12 h
+        long step = 5 * 60_000L, tHi = now, tLo = now;
+        double hi = -999, lo = 999;
+        for (long t = now - 12 * 3600_000L; t <= now + 12 * 3600_000L; t += step) {
+            double a = sunAltitude(t, lat, lon);
+            if (a > hi) {
+                hi = a;
+                tHi = t;
+            }
+            if (a < lo) {
+                lo = a;
+                tLo = t;
+            }
         }
-        return new long[]{up, down};
+        long edge = 12 * 3600_000L - step;
+        if (Math.abs(tHi - now) <= 20 * 60_000L && Math.abs(tHi - now) < edge && alt > 0) return "SOLAR NOON";
+        if (Math.abs(tLo - now) <= 20 * 60_000L && Math.abs(tLo - now) < edge && alt < 0) return "SOLAR MIDNIGHT";
+        if (alt > 6) return rising ? "MORNING" : "AFTERNOON";
+        if (alt > 2) return "GOLDEN HOUR";
+        if (alt > -0.833) return rising ? "SUNRISE" : "SUNSET";
+        if (alt > -4) return rising ? "CIVIL DAWN" : "CIVIL DUSK";
+        if (alt > -6) return "BLUE HOUR";
+        if (alt > -12) return rising ? "NAUTICAL DAWN" : "NAUTICAL DUSK";
+        if (alt > -18) return rising ? "ASTRO DAWN" : "ASTRO DUSK";
+        return "NIGHT";
     }
 
     /** Moonrise and moonset (epoch ms) within 24 h from start, or -1 when there is none. */
