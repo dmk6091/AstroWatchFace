@@ -329,23 +329,70 @@ def seismo():
 
 
 QRED_ICON = '#FF5440'
-for name, im in (('ic_wave', wave()), ('ic_quake', seismo()), ('ic_rain', umbrella())):
+
+
+def windy():
+    im = canvas()
+    dd = ImageDraw.Draw(im)
+    c = hexrgb('#5EE0C8')
+    for y, x1, r in ((60, 150, 22), (100, 170, 26), (140, 125, 20)):
+        dd.line((15, y, x1, y), fill=c, width=14)
+        dd.arc((x1 - r, y - 2 * r, x1 + r, y), -90, 160, fill=c, width=14)
+    return im
+
+
+def gauge():
+    im = canvas()
+    dd = ImageDraw.Draw(im)
+    c = hexrgb('#FFB86B')
+    dd.arc((20, 30, 180, 190), 180, 360, fill=c, width=14)
+    dd.line((100, 110, 145, 60), fill=c, width=14)
+    dd.ellipse((88, 98, 112, 122), fill=c)
+    dd.line((20, 110, 180, 110), fill=c, width=8)
+    return im
+
+
+def swell():
+    im = canvas()
+    dd = ImageDraw.Draw(im)
+    c = hexrgb('#59A8FF')
+    pts = [(x, 110 - 55 * math.sin(x / 200 * 2 * math.pi * 1.5)) for x in range(10, 191, 4)]
+    dd.line(pts, fill=c, width=16, joint='curve')
+    dd.line([(x, y + 45) for x, y in pts], fill=c, width=10, joint='curve')
+    return im
+
+
+def haze():
+    im = canvas()
+    dd = ImageDraw.Draw(im)
+    c = hexrgb('#FFD23C')
+    for (x, y, r) in ((50, 60, 14), (110, 45, 10), (160, 75, 16), (80, 115, 18), (140, 135, 12), (40, 160, 10), (110, 175, 14)):
+        dd.ellipse((x - r, y - r, x + r, y + r), fill=c)
+    return im
+
+
+for name, im in (('ic_wave', wave()), ('ic_quake', seismo()), ('ic_rain', umbrella()), ('ic_wind', windy()),
+                 ('ic_press', gauge()), ('ic_sea', swell()), ('ic_air', haze())):
     im.resize((44, 44), Image.LANCZOS).save(os.path.join(RES, 'drawable-nodpi', name + '.png'))
 
 
+NPAN = 7
+
+
 def dots(active):
-    im = Image.new('RGBA', (80 * 2, 20 * 2), (0, 0, 0, 0))
+    """Page dots: 56 x 10 at the face's scale (drawn 4x, kept at 2x)."""
+    im = Image.new('RGBA', (56 * 4, 10 * 4), (0, 0, 0, 0))
     dd = ImageDraw.Draw(im)
-    for i in range(3):
-        x, y = (8 + 12 * i) * 4, 5 * 4      # 4x: 40 x 10 at the face's scale
+    for i in range(NPAN):
+        x, y = (4 + 8 * i) * 4, 5 * 4
         if i == active:
-            dd.ellipse((x - 13, y - 13, x + 13, y + 13), fill=(230, 238, 250, 255))
+            dd.ellipse((x - 12, y - 12, x + 12, y + 12), fill=(230, 238, 250, 255))
         else:
-            dd.ellipse((x - 10, y - 10, x + 10, y + 10), outline=(150, 175, 215, 230), width=4)
-    return im.resize((80, 20), Image.LANCZOS)
+            dd.ellipse((x - 8, y - 8, x + 8, y + 8), outline=(150, 175, 215, 230), width=4)
+    return im.resize((112, 20), Image.LANCZOS)
 
 
-for i in range(3):
+for i in range(NPAN):
     dots(i).save(os.path.join(RES, 'drawable-nodpi', 'dots_%d.png' % i))
 
 def hand(w, length, tail, hub_from_top, fill):
@@ -503,7 +550,7 @@ def D(x, y, name, width, template, size, color, align='CENTER', w=None, font='ba
 
 
 # bottom panel: three screens (tide / quakes / rain), the companion picks one, a tap goes to the next
-PANEL = {'tide': [], 'quake': [], 'rain': []}
+PANEL = {'tide': [], 'quake': [], 'rain': [], 'wind': [], 'press': [], 'sea': [], 'air': []}
 QRED = '#FF5440'
 
 
@@ -535,6 +582,14 @@ D(108, 390, 'rhead', 15, '%s', 17, TEAL, 'START', 176, to=RP)
 D(340, 390, 'rlvl', 8, '%s', 14, SOFT, 'END', 80, to=RP)
 D(172, 407, 'rmax', 15, '%s', 15, SOFT, 'CENTER', 124, to=RP)
 D(282, 407, 'rend', 12, '%s', 15, SOFT, 'CENTER', 112, to=RP)
+# wind / pressure / sea / air share these four fields (the companion fills them for the screen showing)
+XP = PANEL['wind']
+D(108, 390, 'xh', 17, '%s', 17, WHITE, 'START', 176, to=XP)
+D(340, 390, 'xl', 11, '%s', 14, SOFT, 'END', 90, to=XP)
+D(172, 407, 'xa', 16, '%s', 15, SOFT, 'CENTER', 112, to=XP)
+D(282, 407, 'xb', 16, '%s', 15, SOFT, 'CENTER', 112, to=XP)
+for k_ in ('press', 'sea', 'air'):
+    PANEL[k_].extend(XP)
 # text along the bezel in the empty strips at 9 and 3 o'clock (reads upward on the left, downward on
 # the right, letters' tops toward the edge). Angles: 0 = 12 o'clock, clockwise.
 ARCS = []
@@ -570,20 +625,21 @@ def ptxt(x, y, s, size, color, align):
     return T(x, y, s, size=size, color=color, align=align, width=40, preview=False)
 
 
-for name, ic, i, ends in (('tide', 'ic_wave', 0, None), ('quake', 'ic_quake', 1, ('-24h', 'NOW')),
-                          ('rain', 'ic_rain', 2, ('NOW', '+2h'))):
-    PANEL[name].insert(0, pimg(ic, 92 - 11, 390 - 11, 22, 22) + pimg('dots_%d' % i, 205, 336, 40, 10))
+SCREENS = (('tide', 'ic_wave', None), ('quake', 'ic_quake', ('-24h', 'NOW')), ('rain', 'ic_rain', ('NOW', '+2h')),
+           ('wind', 'ic_wind', ('-6h', '+18h')), ('press', 'ic_press', ('-6h', '+18h')),
+           ('sea', 'ic_sea', ('-6h', '+18h')), ('air', 'ic_air', ('-6h', '+18h')))
+for i, (name, ic, ends) in enumerate(SCREENS):
+    PANEL[name].insert(0, pimg(ic, 92 - 11, 390 - 11, 22, 22) + pimg('dots_%d' % i, 197, 336, 56, 10))
     if ends:
         PANEL[name].append(ptxt(gx_ - 2, gy_ + gh_ - 3, ends[0], 10, DIM, 'END')
                            + ptxt(gx_ + gw_ + 2, gy_ + gh_ - 3, ends[1], 10, DIM, 'START'))
-panel_group = ('<Group name="panel" x="0" y="0" width="450" height="450"><Condition><Expressions>'
-               '<Expression name="pq"><![CDATA[textLength([COMPLICATION.TEXT]) == %d]]></Expression>'
-               '<Expression name="pr"><![CDATA[textLength([COMPLICATION.TEXT]) == %d]]></Expression>'
-               '</Expressions><Compare expression="pq">%s</Compare><Compare expression="pr">%s</Compare>'
-               '<Default>%s</Default></Condition></Group>') % (TOTAL + 2, TOTAL + 3, ''.join(PANEL['quake']),
-                                                                ''.join(PANEL['rain']), ''.join(PANEL['tide']))
+exprs_ = ''.join('<Expression name="p%d"><![CDATA[textLength([COMPLICATION.TEXT]) == %d]]></Expression>'
+                 % (i, TOTAL + i + 1) for i in range(1, NPAN))
+cmps_ = ''.join('<Compare expression="p%d">%s</Compare>' % (i, ''.join(PANEL[SCREENS[i][0]])) for i in range(1, NPAN))
+panel_group = ('<Group name="panel" x="0" y="0" width="450" height="450"><Condition><Expressions>%s</Expressions>'
+               '%s<Default>%s</Default></Condition></Group>') % (exprs_, cmps_, ''.join(PANEL['tide']))
 BOTTOM.append(panel_group)
-EMPTY_B.insert(0, pimg('ic_wave', 92 - 11, 390 - 11, 22, 22) + pimg('dots_0', 205, 336, 40, 10))
+EMPTY_B.insert(0, pimg('ic_wave', 92 - 11, 390 - 11, 22, 22) + pimg('dots_0', 197, 336, 56, 10))
 
 # The renderer draws a slot only inside its bounding area, and a tap goes to the slot with the lowest id
 # among those under the finger. So the companion's text feeds two slots:
@@ -742,7 +798,7 @@ mi = Image.open(os.path.join(RES, 'drawable-nodpi', 'moon_09.png')).resize((msz,
 prev.alpha_composite(mi, (358 - msz // 2, 198 - msz // 2))
 wi = Image.open(os.path.join(RES, 'drawable-nodpi', 'wx_d_14.png')).resize((isz, isz), Image.LANCZOS)
 prev.alpha_composite(wi, (92 - isz // 2, 196 - isz // 2))
-for res_, (x_, y_, w_, h_) in (('ic_wave', (81, 379, 22, 22)), ('dots_0', (205, 336, 40, 10))):
+for res_, (x_, y_, w_, h_) in (('ic_wave', (81, 379, 22, 22)), ('dots_0', (197, 336, 56, 10))):
     im_ = Image.open(os.path.join(RES, 'drawable-nodpi', res_ + '.png')).convert('RGBA').resize((w_, h_), Image.LANCZOS)
     prev.alpha_composite(im_, (x_, y_))
 def arc_text(img, text, wff_mid, r_base, size, color):

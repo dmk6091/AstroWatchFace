@@ -11,12 +11,12 @@ import android.util.Log;
 import androidx.wear.watchface.complications.datasource.ComplicationDataSourceUpdateRequester;
 
 /**
- * The face's bottom panel: tide, earthquakes or rain. A tap on the panel moves to the next one.
+ * The face's bottom panel: tide, earthquakes, rain, wind, pressure trend, sea state or air quality. A tap on the panel moves to the next one.
  * When rain is less than 30 minutes away the rain screen comes up by itself (unless you tapped
  * in the last 20 minutes), and the panel goes back to your choice once it's dry.
  */
 public class Panel extends BroadcastReceiver {
-    static final int TIDE = 0, QUAKES = 1, RAIN = 2, COUNT = 3;
+    static final int TIDE = 0, QUAKES = 1, RAIN = 2, WIND = 3, PRESSURE = 4, SEA = 5, AIR = 6, COUNT = 7;
 
     /** The screen showing now. */
     static int current(SharedPreferences p, long now) {

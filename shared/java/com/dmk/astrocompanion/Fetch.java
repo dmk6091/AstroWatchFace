@@ -89,9 +89,16 @@ final class Fetch {
         }
         try {
             String url = String.format(Locale.US, "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=%.4f"
-                    + "&longitude=%.4f&current=us_aqi", lat, lon);
-            JSONObject cur = new JSONObject(Net.get(url)).getJSONObject("current");
+                    + "&longitude=%.4f&current=us_aqi&hourly=us_aqi,pm2_5,pm10&past_hours=6&forecast_hours=19"
+                    + "&timeformat=unixtime", lat, lon);
+            JSONObject aj = new JSONObject(Net.get(url));
+            JSONObject cur = aj.getJSONObject("current");
             Store.putD(e, "aqi", cur.optDouble("us_aqi", Double.NaN));
+            try {
+                Topics.save(e, "aq", aj.getJSONObject("hourly"), "us_aqi", "pm2_5", "pm10");
+            } catch (Throwable t) {
+                Log.w(TAG, "air hourly: " + t);
+            }
             st.append(", air ok");
         } catch (Throwable t) {
             Log.w(TAG, "air: " + t);
@@ -121,6 +128,26 @@ final class Fetch {
         } catch (Throwable t) {
             Log.w(TAG, "tide: " + t);
             st.append(", tide failed: ").append(t.getMessage());
+        }
+        try {
+            String url = String.format(Locale.US, "https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f"
+                    + Topics.PARAMS_WEATHER, lat, lon);
+            Topics.save(e, "tw", new JSONObject(Net.get(url)).getJSONObject("hourly"),
+                    "wind_speed_10m", "wind_gusts_10m", "wind_direction_10m", "pressure_msl");
+        } catch (Throwable t) {
+            Log.w(TAG, "wind: " + t);
+            st.append(", wind failed");
+        }
+        try {
+            int idx = Tide.place(p, lat, lon);
+            String url = String.format(Locale.US, "https://marine-api.open-meteo.com/v1/marine?latitude=%.3f&longitude=%.3f"
+                    + "&hourly=wave_height,wave_period,wave_direction&timeformat=unixtime&past_days=1&forecast_days=2",
+                    Tide.POS[idx][0], Tide.POS[idx][1]);
+            Topics.save(e, "sw", new JSONObject(Net.get(url)).getJSONObject("hourly"),
+                    "wave_height", "wave_period", "wave_direction");
+        } catch (Throwable t) {
+            Log.w(TAG, "waves: " + t);
+            st.append(", waves failed");
         }
         st.append(", ").append(Iss.refresh(p, e));
         st.append(", ").append(Quakes.refresh(e));

@@ -224,6 +224,11 @@ final class Engine {
         v.put("panel", String.valueOf(Panel.checkAuto(ctx, p, now)));
         Quakes.values(p, v, now, loc ? lat : FALLBACK_LAT, loc ? lon : FALLBACK_LON);
         Rain.values(p, v, now);
+        try {
+            Topics.values(p, v, now, Integer.parseInt(v.get("panel")));
+        } catch (Throwable t) {
+            Log.w(TAG, "topics: " + t);
+        }
 
         // tide
         Tide.Series s = Tide.Series.load(p);

@@ -763,16 +763,16 @@ public class MainActivity extends Activity {
         ui.label(c, "Bottom panel on the face");
         ui.gap(c, 10);
         LinearLayout seg = ui.row(c);
-        String[] ps = {"Tide", "Quakes", "Rain"};
+        String[] ps = {"Tide", "Quake", "Rain", "Wind", "Press", "Sea", "Air"};
         int pn = w == null ? 0 : w.getInt(Link.K_PANEL, 0);
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < ps.length; i++) {
             final int k = i;
-            TextView t = ui.text(null, ps[i], 16, pn == i ? Ui.WHITE : Ui.SOFT, ui.semi);
+            TextView t = ui.text(null, ps[i], 14, pn == i ? Ui.WHITE : Ui.SOFT, ui.semi);
             t.setGravity(Gravity.CENTER);
             t.setPadding(0, ui.dp(12), 0, ui.dp(12));
             t.setBackground(Ui.round(pn == i ? Ui.SEL : Ui.CARD2, ui.dp(16)));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
-            lp.rightMargin = i < 2 ? ui.dp(6) : 0;
+            lp.rightMargin = i < ps.length - 1 ? ui.dp(4) : 0;
             seg.addView(t, lp);
             t.setOnClickListener(v -> set(Link.K_PANEL, k));
         }
