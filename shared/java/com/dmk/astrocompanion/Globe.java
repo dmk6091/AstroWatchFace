@@ -76,6 +76,15 @@ final class Globe {
      * Overlays are drawn in face units (450 across) and scaled.
      */
     static Bitmap draw(Context ctx, int size, double dim, double lat0, double lon0, long now, Iss.Orbit iss) {
+        return draw(ctx, size, dim, lat0, lon0, now, iss, lat0, lon0, false);
+    }
+
+    /**
+     * The phone's globe: centred on (lat0, lon0) wherever you've turned it; you are at (meLat, meLon)
+     * and, with world = true, the clocks of cities all over the world are shown.
+     */
+    static Bitmap draw(Context ctx, int size, double dim, double lat0, double lon0, long now, Iss.Orbit iss,
+                       double meLat, double meLon, boolean world) {
         Bitmap bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
         if (!load(ctx)) return bmp;
         int[] px = new int[size * size];
@@ -143,14 +152,15 @@ final class Globe {
         float[] mp = project(ml[0], ml[1], lat0, lon0, cx, cy, r);
         if (mp != null) drawMoon(cv, mp[0], mp[1], 11, Astro.moonAge(now));
         if (iss != null) drawIss(cv, iss, now, lat0, lon0, cx, cy, r);
-        drawCities(cv, now, lat0, lon0);
+        drawCities(cv, now, lat0, lon0, meLat, meLon, world);
         // sky dial removed from the face (drawDial kept for later)
         Paint me = new Paint(Paint.ANTI_ALIAS_FLAG);
         me.setStyle(Paint.Style.STROKE);
         me.setStrokeWidth(2.5f);
         me.setColor(Color.rgb(255, 140, 60));
-        cv.drawCircle((float) cx, (float) cy, 5, me);
-        String cd = countdown(ctx, now, lat0, lon0);
+        float[] mm = project(meLat, meLon, lat0, lon0, cx, cy, r);
+        if (mm != null) cv.drawCircle(mm[0], mm[1], 5, me);
+        String cd = countdown(ctx, now, meLat, meLon);
         if (cd != null) label(cv, cd, 225, 320, 11, Color.rgb(230, 236, 248));
         return bmp;
     }
@@ -219,20 +229,61 @@ final class Globe {
             {"MALÉ", 4.18, 73.51, "Indian/Maldives", true},
     };
 
-    private static void drawCities(Canvas cv, long now, double lat0, double lon0) {
+    private static final Object[][] WORLD = {
+            {"LONDON", 51.51, -0.13, "Europe/London"}, {"PARIS", 48.86, 2.35, "Europe/Paris"},
+            {"MOSCOW", 55.76, 37.62, "Europe/Moscow"}, {"ISTANBUL", 41.01, 28.98, "Europe/Istanbul"},
+            {"CAIRO", 30.04, 31.24, "Africa/Cairo"}, {"NAIROBI", -1.29, 36.82, "Africa/Nairobi"},
+            {"LAGOS", 6.52, 3.38, "Africa/Lagos"}, {"JOHANNESBURG", -26.2, 28.05, "Africa/Johannesburg"},
+            {"TEHRAN", 35.69, 51.39, "Asia/Tehran"}, {"KARACHI", 24.86, 67.0, "Asia/Karachi"},
+            {"COLOMBO", 6.93, 79.86, "Asia/Colombo"}, {"BANGKOK", 13.76, 100.5, "Asia/Bangkok"},
+            {"SINGAPORE", 1.35, 103.82, "Asia/Singapore"}, {"HONG KONG", 22.32, 114.17, "Asia/Hong_Kong"},
+            {"BEIJING", 39.9, 116.4, "Asia/Shanghai"}, {"TOKYO", 35.68, 139.69, "Asia/Tokyo"},
+            {"SEOUL", 37.57, 126.98, "Asia/Seoul"}, {"SYDNEY", -33.87, 151.21, "Australia/Sydney"},
+            {"AUCKLAND", -36.85, 174.76, "Pacific/Auckland"}, {"HONOLULU", 21.31, -157.86, "Pacific/Honolulu"},
+            {"LOS ANGELES", 34.05, -118.24, "America/Los_Angeles"}, {"MEXICO CITY", 19.43, -99.13, "America/Mexico_City"},
+            {"NEW YORK", 40.71, -74.0, "America/New_York"}, {"SAO PAULO", -23.55, -46.63, "America/Sao_Paulo"},
+            {"BUENOS AIRES", -34.6, -58.38, "America/Argentina/Buenos_Aires"}, {"ANCHORAGE", 61.22, -149.9, "America/Anchorage"},
+            {"DUBAI", 25.20, 55.27, "Asia/Dubai"}, {"KATHMANDU", 27.72, 85.32, "Asia/Kathmandu"},
+            {"DHAKA", 23.81, 90.41, "Asia/Dhaka"}, {"MALE", 4.18, 73.51, "Indian/Maldives"},
+    };
+
+    private static void drawCities(Canvas cv, long now, double lat0, double lon0, double meLat, double meLon, boolean world) {
         Paint dot = new Paint(Paint.ANTI_ALIAS_FLAG);
         dot.setColor(Color.rgb(240, 244, 250));
         java.text.SimpleDateFormat f = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.US);
-        for (Object[] c : CITIES) {
+        java.util.List<float[]> used = new java.util.ArrayList<>();
+        if (world) {        // the places already used by the dots of the globe: your own dot
+            float[] mm = project(meLat, meLon, lat0, lon0, 225, 225, 225);
+            if (mm != null) used.add(new float[]{mm[0] - 30, mm[1] - 14, mm[0] + 30, mm[1] + 14});
+        }
+        Object[][] list = world ? WORLD : CITIES;
+        for (Object[] c : list) {
             double la = (Double) c[1], lo = (Double) c[2];
-            if (Quakes.km(la, lo, lat0, lon0) < 300) continue;     // too close to your own dot
+            if (Quakes.km(la, lo, meLat, meLon) < 300) continue;     // too close to your own dot
             float[] q = project(la, lo, lat0, lon0, 225, 225, 225);
-            if (q == null || q[0] < 40 || q[0] > 410 || q[1] < 40 || q[1] > 410) continue;
-            cv.drawCircle(q[0], q[1], 2.6f, dot);
+            if (q == null) continue;
+            if (world) {
+                if (Math.hypot(q[0] - 225, q[1] - 225) > 196) continue;
+            } else if (q[0] < 40 || q[0] > 410 || q[1] < 40 || q[1] > 410) continue;
             f.setTimeZone(java.util.TimeZone.getTimeZone((String) c[3]));
-            boolean below = (Boolean) c[4];
-            label(cv, c[0] + " " + f.format(new java.util.Date(now)), q[0], below ? q[1] + 17 : q[1] - 7, 9.5f,
-                    Color.rgb(225, 232, 245));
+            boolean below = !world && (Boolean) c[4];
+            String text = c[0] + " " + f.format(new java.util.Date(now));
+            float ty = below ? q[1] + 17 : q[1] - 7;
+            if (world) {
+                float w = text.length() * 5.6f;
+                float[] box = {q[0] - w / 2, ty - 10, q[0] + w / 2, ty + 3};
+                boolean clash = false;
+                for (float[] u : used) {
+                    if (box[0] < u[2] && box[2] > u[0] && box[1] < u[3] && box[3] > u[1]) {
+                        clash = true;
+                        break;
+                    }
+                }
+                if (clash) continue;
+                used.add(box);
+            }
+            cv.drawCircle(q[0], q[1], 2.6f, dot);
+            label(cv, text, q[0], ty, 9.5f, Color.rgb(225, 232, 245));
         }
     }
 

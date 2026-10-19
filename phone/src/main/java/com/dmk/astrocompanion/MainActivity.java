@@ -212,13 +212,98 @@ public class MainActivity extends Activity {
         }
     }
 
+    // ---- turning the globe: drag to rotate, double-tap to come back to you
+    private double viewLat = Double.NaN, viewLon = Double.NaN;
+    private volatile int spinGen;
+    private final java.util.concurrent.ExecutorService spinPool = java.util.concurrent.Executors.newSingleThreadExecutor();
+
+    private double[] viewCenter() {
+        SharedPreferences p = prefs();
+        double la = Store.d(p, "lat", Where.FALLBACK_LAT), lo = Store.d(p, "lon", Where.FALLBACK_LON);
+        return new double[]{Double.isNaN(viewLat) ? la : viewLat, Double.isNaN(viewLon) ? lo : viewLon};
+    }
+
+    private int globeSize() {
+        return Math.min(1080, getResources().getDisplayMetrics().widthPixels - ui.dp(32));
+    }
+
+    /** Redraws the globe for the current view in the background (small while a finger is moving it). */
+    private void spin(ImageView iv, boolean fast) {
+        final int gen = ++spinGen;
+        final double[] c = viewCenter();
+        final long now = System.currentTimeMillis();
+        final int size = fast ? Math.max(240, globeSize() / 3) : globeSize();
+        final SharedPreferences p = prefs();
+        final double meLat = Store.d(p, "lat", Where.FALLBACK_LAT), meLon = Store.d(p, "lon", Where.FALLBACK_LON);
+        final Iss.Orbit orbit = Iss.orbit(p);
+        spinPool.execute(() -> {
+            if (gen != spinGen) return;
+            Bitmap b = Globe.draw(this, size, 0.92, c[0], c[1], now, orbit, meLat, meLon, true);
+            if (gen != spinGen) return;
+            runOnUiThread(() -> {
+                if (gen != spinGen) return;
+                globe = b;
+                globeAt = now;
+                iv.setImageBitmap(b);
+            });
+        });
+    }
+
+    private void makeTurnable(ImageView iv) {
+        final android.view.GestureDetector gd = new android.view.GestureDetector(this,
+                new android.view.GestureDetector.SimpleOnGestureListener() {
+                    @Override
+                    public boolean onDown(android.view.MotionEvent e) {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean onDoubleTap(android.view.MotionEvent e) {
+                        viewLat = Double.NaN;
+                        viewLon = Double.NaN;
+                        spin(iv, false);
+                        return true;
+                    }
+                });
+        final float[] last = new float[2];
+        iv.setOnTouchListener((v, e) -> {
+            gd.onTouchEvent(e);
+            switch (e.getActionMasked()) {
+                case android.view.MotionEvent.ACTION_DOWN:
+                    last[0] = e.getX();
+                    last[1] = e.getY();
+                    v.getParent().requestDisallowInterceptTouchEvent(true);
+                    return true;
+                case android.view.MotionEvent.ACTION_MOVE: {
+                    double[] c = viewCenter();
+                    double k = 100.0 / Math.max(1, v.getWidth());     // degrees per pixel
+                    double lo = c[1] - (e.getX() - last[0]) * k, la = c[0] + (e.getY() - last[1]) * k;
+                    last[0] = e.getX();
+                    last[1] = e.getY();
+                    viewLon = ((lo + 540) % 360 + 360) % 360 - 180;
+                    viewLat = Math.max(-85, Math.min(85, la));
+                    spin(iv, true);
+                    return true;
+                }
+                case android.view.MotionEvent.ACTION_UP:
+                case android.view.MotionEvent.ACTION_CANCEL:
+                    v.getParent().requestDisallowInterceptTouchEvent(false);
+                    if (!Double.isNaN(viewLat)) spin(iv, false);
+                    return true;
+                default:
+                    return true;
+            }
+        });
+    }
+
     private void drawGlobe(boolean force) {
         long now = System.currentTimeMillis();
         if (!force && globe != null && now - globeAt < 2 * 60_000L) return;
         SharedPreferences p = prefs();
-        int size = Math.min(1080, getResources().getDisplayMetrics().widthPixels - ui.dp(32));
-        globe = Globe.draw(this, size, 0.92, Store.d(p, "lat", Where.FALLBACK_LAT), Store.d(p, "lon", Where.FALLBACK_LON),
-                now, Iss.orbit(p));
+        int size = globeSize();
+        double[] c = viewCenter();
+        globe = Globe.draw(this, size, 0.92, c[0], c[1], now, Iss.orbit(p),
+                Store.d(p, "lat", Where.FALLBACK_LAT), Store.d(p, "lon", Where.FALLBACK_LON), true);
         globeAt = now;
     }
 
@@ -377,13 +462,15 @@ public class MainActivity extends Activity {
             ImageView iv = new ImageView(this);
             iv.setImageBitmap(globe);
             iv.setAdjustViewBounds(true);
+            makeTurnable(iv);
             content.addView(iv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         } else {
             TextView t = ui.text(content, "Drawing the Earth…", 15, Ui.DIM, ui.med);
             t.setGravity(Gravity.CENTER);
             t.setPadding(0, ui.dp(120), 0, ui.dp(120));
         }
-        ui.gap(content, 10);
+        ui.text(content, "Drag to turn the globe · double-tap to come back to you", 13, Ui.DIM, ui.med).setPadding(0, ui.dp(6), 0, 0);
+        ui.gap(content, 6);
         LinearLayout lg = ui.scrollRow(content);
         ui.legend(lg, "you", Ui.ORANGE, true);
         ui.legend(lg, "quakes 24 h", Ui.RED, true);
