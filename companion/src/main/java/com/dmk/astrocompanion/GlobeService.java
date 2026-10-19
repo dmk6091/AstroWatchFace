@@ -34,6 +34,7 @@ public class GlobeService extends ComplicationDataSourceService {
                     SharedPreferences p = Store.p(this);
                     long now = System.currentTimeMillis();
                     double lat = Store.d(p, "lat", Engine.FALLBACK_LAT), lon = Store.d(p, "lon", Engine.FALLBACK_LON);
+                    Globe.showQuakes = Panel.current(p, now) == Panel.QUAKES;
                     data = TideGraphService.image(type, TideGraphService.jpeg(
                             Globe.render(this, lat, lon, now, sunFrac(p, now), Iss.orbit(p))), "Earth");
                 }

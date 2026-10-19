@@ -21,6 +21,9 @@ final class Globe {
     private static int[] sDay, sNight;
     private static int sW, sH;
     private static Bitmap sCache;
+    private static boolean sCacheQuakes = true;
+    /** The watch shows quakes on the globe only while its bottom panel is on the quake screen. */
+    static volatile boolean showQuakes = true;
     private static long sCacheAt;
 
     private Globe() {}
@@ -60,10 +63,11 @@ final class Globe {
 
     /** With the ISS (dot + 20 min trail + 10 min ahead) when its orbit is known. Cached 2 min. */
     static synchronized Bitmap render(Context ctx, double lat0, double lon0, long now, double sunFrac, Iss.Orbit iss) {
-        if (sCache != null && now - sCacheAt < 2 * 60_000L) return sCache;
+        if (sCache != null && now - sCacheAt < 2 * 60_000L && sCacheQuakes == showQuakes) return sCache;
         // The globe fills the whole round face; the day side is dimmed so the text on top reads well.
         sCache = draw(ctx, 450, 0.55, lat0, lon0, now, iss);
         sCacheAt = now;
+        sCacheQuakes = showQuakes;
         return sCache;
     }
 
@@ -134,7 +138,7 @@ final class Globe {
         }
         drawLines(cv, lat0, lon0);
         if (iss != null) drawIssPath(cv, iss, now, lat0, lon0);
-        drawQuakes(cv, ctx, now, lat0, lon0, cx, cy, r);
+        if (showQuakes) drawQuakes(cv, ctx, now, lat0, lon0, cx, cy, r);
         double[] ml = Astro.sublunar(now);
         float[] mp = project(ml[0], ml[1], lat0, lon0, cx, cy, r);
         if (mp != null) drawMoon(cv, mp[0], mp[1], 11, Astro.moonAge(now));

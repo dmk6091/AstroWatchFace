@@ -47,6 +47,7 @@ public class Panel extends BroadcastReceiver {
         try {
             ComplicationDataSourceUpdateRequester.create(c, new ComponentName(c, DataService.class)).requestUpdateAll();
             ComplicationDataSourceUpdateRequester.create(c, new ComponentName(c, TideGraphService.class)).requestUpdateAll();
+            ComplicationDataSourceUpdateRequester.create(c, new ComponentName(c, GlobeService.class)).requestUpdateAll();
         } catch (Throwable t) {
             Log.w(Engine.TAG, "panel: " + t);
         }
@@ -59,6 +60,7 @@ public class Panel extends BroadcastReceiver {
             p.edit().putInt("panelShown", cur).apply();
             try {
                 ComplicationDataSourceUpdateRequester.create(c, new ComponentName(c, TideGraphService.class)).requestUpdateAll();
+                ComplicationDataSourceUpdateRequester.create(c, new ComponentName(c, GlobeService.class)).requestUpdateAll();
             } catch (Throwable ignored) {
             }
         }
