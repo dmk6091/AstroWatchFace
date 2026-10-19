@@ -22,6 +22,7 @@ final class Globe {
     private static int sW, sH;
     private static Bitmap sCache;
     private static boolean sCacheQuakes = true;
+    private static String sCacheKey = "";
     /** The watch shows quakes on the globe only while its bottom panel is on the quake screen. */
     static volatile boolean showQuakes = true;
     private static long sCacheAt;
@@ -63,11 +64,20 @@ final class Globe {
 
     /** With the ISS (dot + 20 min trail + 10 min ahead) when its orbit is known. Cached 2 min. */
     static synchronized Bitmap render(Context ctx, double lat0, double lon0, long now, double sunFrac, Iss.Orbit iss) {
-        if (sCache != null && now - sCacheAt < 2 * 60_000L && sCacheQuakes == showQuakes) return sCache;
+        return render(ctx, lat0, lon0, now, sunFrac, iss, lat0, lon0, false);
+    }
+
+    /** Turned: centred on (lat0, lon0), you at (meLat, meLon); world adds city clocks all over the Earth. */
+    static synchronized Bitmap render(Context ctx, double lat0, double lon0, long now, double sunFrac, Iss.Orbit iss,
+                                      double meLat, double meLon, boolean world) {
+        String key = lat0 + "," + lon0 + "," + world;
+        if (sCache != null && now - sCacheAt < 2 * 60_000L && sCacheQuakes == showQuakes && key.equals(sCacheKey))
+            return sCache;
         // The globe fills the whole round face; the day side is dimmed so the text on top reads well.
-        sCache = draw(ctx, 450, 0.55, lat0, lon0, now, iss);
+        sCache = draw(ctx, 450, 0.55, lat0, lon0, now, iss, meLat, meLon, world);
         sCacheAt = now;
         sCacheQuakes = showQuakes;
+        sCacheKey = key;
         return sCache;
     }
 

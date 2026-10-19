@@ -35,8 +35,11 @@ public class GlobeService extends ComplicationDataSourceService {
                     long now = System.currentTimeMillis();
                     double lat = Store.d(p, "lat", Engine.FALLBACK_LAT), lon = Store.d(p, "lon", Engine.FALLBACK_LON);
                     Globe.showQuakes = Panel.current(p, now) == Panel.QUAKES;
+                    int turn = Panel.spinSteps(p, now);
+                    double lon0 = ((lon + 60.0 * turn + 540) % 360 + 360) % 360 - 180;
                     data = TideGraphService.image(type, TideGraphService.jpeg(
-                            Globe.render(this, lat, lon, now, sunFrac(p, now), Iss.orbit(p))), "Earth");
+                            Globe.render(this, lat, lon0, now, sunFrac(p, now), Iss.orbit(p), lat, lon, turn != 0)),
+                            "Earth", Panel.spinTap(this));
                 }
             } catch (Throwable t) {
                 Log.w(Engine.TAG, "globe: " + t);
