@@ -124,6 +124,26 @@ final class Fetch {
         }
         st.append(", ").append(Iss.refresh(p, e));
         st.append(", ").append(Quakes.refresh(e));
+        try {
+            JSONArray kp = new JSONArray(Net.get("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"));
+            double k = Double.NaN;
+            for (int i = kp.length() - 1; i >= 0 && Double.isNaN(k); i--) {
+                Object row = kp.get(i);
+                if (row instanceof JSONObject) k = ((JSONObject) row).optDouble("Kp", Double.NaN);
+                else if (row instanceof JSONArray) {
+                    try {
+                        k = Double.parseDouble(((JSONArray) row).getString(1));
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
+            Store.putD(e, "kp", k);
+            e.putLong("kpTime", now);
+            st.append(", kp ").append(Double.isNaN(k) ? "?" : String.format(Locale.US, "%.0f", k));
+        } catch (Throwable t) {
+            Log.w(TAG, "kp: " + t);
+            st.append(", kp failed");
+        }
         e.apply();
         return st.toString();
     }

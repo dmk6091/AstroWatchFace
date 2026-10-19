@@ -146,7 +146,7 @@ final class Tide {
         fill.lineTo(lastX, y1);
         fill.close();
         Paint pf = new Paint(Paint.ANTI_ALIAS_FLAG);
-        pf.setShader(new LinearGradient(0, y0, 0, y1, Color.argb(110, 70, 140, 230), Color.argb(25, 70, 140, 230),
+        pf.setShader(new LinearGradient(0, y0, 0, y1, Color.argb(70, 70, 140, 230), Color.argb(8, 70, 140, 230),
                 Shader.TileMode.CLAMP));
         c.drawPath(fill, pf);
         Paint pl = new Paint(Paint.ANTI_ALIAS_FLAG);

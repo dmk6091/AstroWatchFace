@@ -217,7 +217,6 @@ gx, gy, gs = GLOBE
 fg = Image.new('RGBA', (S, S), (0, 0, 0, 0))
 d = ImageDraw.Draw(fg)
 # thin dividers
-d.line(P(60, 160) + P(390, 160), fill=(150, 175, 215, 200), width=SS)
 d.line(P(110, 352) + P(203, 352), fill=(150, 175, 215, 140), width=SS)   # gap: page dots of the bottom panel
 d.line(P(247, 352) + P(340, 352), fill=(150, 175, 215, 140), width=SS)
 
@@ -310,12 +309,14 @@ def wave():
     return im
 
 
+d.polygon([P(326, 276), P(321, 285), P(331, 285)], fill=hexrgb('#C9B3FF'))      # moonrise: up
+d.polygon([P(372, 285), P(367, 277), P(377, 277)], fill=hexrgb('#C9B3FF'))      # moonset: down
 icon(sun_half(GOLD), 128, 82, 22)
 icon(sun_half('#F28B3D'), 280, 82, 22)
 icon(umbrella(), 52, 275, 22)
 icon(drop(), 52, 305, 20)
 icon(leaf(), 52, 335, 20)
-icon(mountain(), 318, 300, 24)
+icon(mountain(), 318, 305, 24)
 icon(hourglass(), 318, 331, 20)
 label('AQI', 72, 335, 12, GREEN, anchor='lm')
 
@@ -348,6 +349,35 @@ def dots(active):
 
 for i in range(3):
     dots(i).save(os.path.join(RES, 'drawable-nodpi', 'dots_%d.png' % i))
+
+def hand(w, length, tail, hub_from_top, fill):
+    """A tapered hand with a dark outline: w x (length + tail) px, pivot `length` px from the top."""
+    k = 4
+    h = length + tail
+    im = Image.new('RGBA', (w * k, h * k), (0, 0, 0, 0))
+    dd = ImageDraw.Draw(im)
+    def poly(grow, col):
+        g = grow * k
+        pts = [(w * k / 2 - 0.50 * w * k * 0.5 - g, length * k), (w * k / 2 - 0.20 * w * k * 0.5 - g, 6 * k - g),
+               (w * k / 2 + 0.20 * w * k * 0.5 + g, 6 * k - g), (w * k / 2 + 0.50 * w * k * 0.5 + g, length * k),
+               (w * k / 2 + 0.38 * w * k * 0.5 + g, h * k - 4 * k + g), (w * k / 2 - 0.38 * w * k * 0.5 - g, h * k - 4 * k + g)]
+        dd.polygon(pts, fill=col)
+        dd.ellipse((w * k / 2 - 0.2 * w * k * 0.5 - g, 6 * k - 0.2 * w * k * 0.5 - g, w * k / 2 + 0.2 * w * k * 0.5 + g,
+                    6 * k + 0.2 * w * k * 0.5 + g), fill=col)
+    poly(2.2, (0, 0, 0, 150))
+    poly(0, hexrgb(fill))
+    return im.resize((w, h), Image.LANCZOS)
+
+
+HAND_H = (26, 104, 26)      # width, length above the centre, tail below it
+HAND_M = (20, 150, 28)
+hand(*HAND_H, 0, '#F4F7FB').save(os.path.join(RES, 'drawable-nodpi', 'hand_h.png'))
+hand(*HAND_M, 0, '#FFFFFF').save(os.path.join(RES, 'drawable-nodpi', 'hand_m.png'))
+_hub = Image.new('RGBA', (80, 80), (0, 0, 0, 0))
+_hd = ImageDraw.Draw(_hub)
+_hd.ellipse((4, 4, 76, 76), fill=(0, 0, 0, 170))
+_hd.ellipse((12, 12, 68, 68), fill=hexrgb('#FF9A5C'))
+_hub.resize((20, 20), Image.LANCZOS).save(os.path.join(RES, 'drawable-nodpi', 'hub.png'))
 
 # fallback globe (shown until the companion sends the live one): daylit Earth over India
 _day = Image.open(os.path.join(HERE, 'textures', 'earth_day.jpg')).convert('RGB')
@@ -417,7 +447,6 @@ SAMPLES.update({DOW: 'SAT', '[DAY]': '17', MON: 'OCT', ILLUM: '35', TEMP: '24', 
 parts = []
 parts.append(T(225, 48, '%s  %s %s', [DOW, '[DAY]', MON], size=22, color=ICE, font='barlow_semibold', width=220,
                launch='CALENDAR'))
-parts.append(T(338, 146, '%s', ['[SECOND_Z]'], size=20, color='#6FA8F5', font='barlow_medium', width=40))
 
 # weather icon (bitmap font by condition), temperature, rain chance
 isz = 44
@@ -485,8 +514,10 @@ D(142, 82, 'srise', 5, '%s', 19, WHITE, 'START', 70, sample='06:18', empty='--:-
 D(294, 82, 'sset', 5, '%s', 19, WHITE, 'START', 70, sample='18:24', empty='--:--')
 D(70, 305, 'hum', 4, '%s', 21, WHITE, 'START', 80, sample='72%')
 D(98, 335, 'aqi', 4, '%s', 21, WHITE, 'START', 60, sample='54')
-D(358, 260, 'mage', 6, '%s', 16, SOFT, 'CENTER', 90, sample='6.2 d')
-D(334, 300, 'alt', 5, '%s m', 21, WHITE, 'START', 90, sample='560')
+D(358, 258, 'mage', 6, '%s', 16, SOFT, 'CENTER', 90, sample='6.2 d')
+D(334, 281, 'mrise', 5, '%s', 15, '#C9B3FF', 'START', 44, sample='12:05', empty='--:--')
+D(380, 281, 'mset', 5, '%s', 15, '#C9B3FF', 'START', 44, sample='23:48', empty='--:--')
+D(334, 305, 'alt', 5, '%s m', 21, WHITE, 'START', 90, sample='560')
 D(334, 331, 'dlen', 7, '%s', 19, WHITE, 'START', 90, sample='11h 41m', empty='--h --m')
 TP, QP, RP = PANEL['tide'], PANEL['quake'], PANEL['rain']
 D(108, 365, 'tplace', 10, '%s', 16, ICE, 'START', 110, sample='MUMBAI', empty='TIDE', to=TP)
@@ -524,7 +555,7 @@ def ARC(name, width, mid, sample, size=15, color=SOFT, span=52):
     ARCS.append((sample, mid, size, color))
 
 
-ARC('arcl', 24, 276, 'UV 6 · 1008 hPa (+1.2)')
+ARC('arcl', 40, 276, 'UV 6 · 1008 hPa (+1.2) · Kp 3', size=14, span=76)
 ARC('arcr', 26, 83, 'SUN 285°W · FACING 40°NE')
 TOTAL = sum(f[1] for f in FIELDS)     # + 1, 2 or 3 marks at the end: which screen (see Engine.pack)
 
@@ -617,10 +648,18 @@ battery = (arc(0, 360, '#1A2130', 1.8, launch='BATTERY_STATUS') +
            '<Compare expression="low">%s</Compare><Default>%s</Default></Condition></Group>') % (
     arc(0, 360, '#E5484D', 1.8, RING), arc(0, 360, '#5FA2F5', 1.8, RING))
 
-clock = ('<DigitalClock x="60" y="92" width="330" height="72">'
-         '<TimeText format="h:mm" hourFormat="SYNC_TO_DEVICE" align="CENTER" x="0" y="0" width="330" height="72">'
-         '<Font family="barlow_semibold" size="70" color="#F2F5FA"/></TimeText></DigitalClock>')
-amb_clock = clock.replace('#F2F5FA', '#C8CED8')
+def analog(tint=None):
+    hh, mh = HAND_H, HAND_M
+    t = (' tintColor="%s"' % tint) if tint else ''
+    return ('<AnalogClock x="0" y="0" width="450" height="450">'
+            '<HourHand resource="hand_h" x="%d" y="%d" width="%d" height="%d" pivotX="0.5" pivotY="%.4f"%s/>'
+            '<MinuteHand resource="hand_m" x="%d" y="%d" width="%d" height="%d" pivotX="0.5" pivotY="%.4f"%s/>'
+            '</AnalogClock>') % (225 - hh[0] / 2, 225 - hh[1], hh[0], hh[1] + hh[2], hh[1] / (hh[1] + hh[2]), t,
+                                 225 - mh[0] / 2, 225 - mh[1], mh[0], mh[1] + mh[2], mh[1] / (mh[1] + mh[2]), t)
+
+
+clock = analog() + '<PartImage x="215" y="215" width="20" height="20"><Image resource="hub"/></PartImage>'
+amb_clock = analog('#C8CED8')
 _n = len(PREVIEW)
 AMB = T(225, 60, '%s  %s %s', [DOW, '[DAY]', MON], size=22, color='#7D8799', font='barlow_semibold', width=220)
 del PREVIEW[_n:]
@@ -637,8 +676,8 @@ def bitmap_font(name, prefix, count, size):
 
 xml = ['<?xml version="1.0" encoding="UTF-8"?>',
        '<WatchFace width="450" height="450">',
-       '<Metadata key="CLOCK_TYPE" value="DIGITAL"/>',
-       '<Metadata key="PREVIEW_TIME" value="8:16:31"/>',
+       '<Metadata key="CLOCK_TYPE" value="ANALOG"/>',
+       '<Metadata key="PREVIEW_TIME" value="10:08:32"/>',
        '<BitmapFonts>', bitmap_font('wx_day', 'wx_d_', 16, 96), bitmap_font('wx_night', 'wx_n_', 16, 96),
        '</BitmapFonts>',
        '<Scene backgroundColor="#FF000000">',
@@ -655,10 +694,10 @@ xml = ['<?xml version="1.0" encoding="UTF-8"?>',
        graph_slot, panel_slot, data_slot,
        '<Group name="ambient" x="0" y="0" width="450" height="450" alpha="0">',
        '<Variant mode="AMBIENT" target="alpha" value="255"/>',
-       AMB, amb_clock.replace('y="92"', 'y="120"'),
+       AMB, amb_clock,
        '<Group name="moon_amb" x="0" y="0" width="450" height="450" alpha="150">'
        + MOON.replace('<Group name="moon" x="%d" y="%d"' % (358 - msz / 2, 198 - msz / 2),
-                      '<Group name="moon2" x="%d" y="%d"' % (225 - msz / 2, 255)) + '</Group>',
+                      '<Group name="moon2" x="%d" y="%d"' % (225 - msz / 2, 330)) + '</Group>',
        '</Group>',
        '</Scene>', '</WatchFace>']
 XML = '\n'.join(xml)
@@ -693,7 +732,13 @@ pts = [(gxx + 4 + i * (gw - 8) / 60, gyy + gh / 2 - (gh / 2 - 4) * math.cos(2 * 
        for i in range(61)]
 pd.line(pts, fill=hexrgb('#5BA8F2'), width=2)
 pd.ellipse((pts[20][0] - 3, pts[20][1] - 3, pts[20][0] + 3, pts[20][1] + 3), fill=(255, 255, 255, 255))
-pd.text((225, 128), '8:16', font=pil_font('barlow_semibold', 70), fill=hexrgb('#F2F5FA'), anchor='mm')
+for img_, (w_, ln_, tl_), ang_ in ((Image.open(os.path.join(RES, 'drawable-nodpi', 'hand_h.png')), HAND_H, 10 * 30 + 4),
+                                   (Image.open(os.path.join(RES, 'drawable-nodpi', 'hand_m.png')), HAND_M, 8 * 6)):
+    big = Image.new('RGBA', (400, 400), (0, 0, 0, 0))
+    big.alpha_composite(img_.convert('RGBA'), (200 - w_ // 2, 200 - ln_))
+    big = big.rotate(-ang_, resample=Image.BICUBIC, center=(200, 200))
+    prev.alpha_composite(big, (25, 25))
+prev.alpha_composite(Image.open(os.path.join(RES, 'drawable-nodpi', 'hub.png')).convert('RGBA'), (215, 215))
 mi = Image.open(os.path.join(RES, 'drawable-nodpi', 'moon_09.png')).resize((msz, msz), Image.LANCZOS)
 prev.alpha_composite(mi, (358 - msz // 2, 198 - msz // 2))
 wi = Image.open(os.path.join(RES, 'drawable-nodpi', 'wx_d_14.png')).resize((isz, isz), Image.LANCZOS)

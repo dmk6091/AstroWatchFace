@@ -146,11 +146,7 @@ final class Globe {
         me.setStrokeWidth(2.5f);
         me.setColor(Color.rgb(255, 140, 60));
         cv.drawCircle((float) cx, (float) cy, 5, me);
-        label(cv, String.format(java.util.Locale.US, "%.2f°%s %.2f°%s", Math.abs(lat0), lat0 >= 0 ? "N" : "S",
-                Math.abs(lon0), lon0 >= 0 ? "E" : "W"), 225, 243, 8.5f, Color.rgb(255, 170, 110));
         String cd = countdown(ctx, now, lat0, lon0);
-        double alat = -lat0, alon = lon0 + 180 > 180 ? lon0 - 180 : lon0 + 180;
-        label(cv, "OPPOSITE: " + where(alat, alon), 225, 264, 8.5f, Color.rgb(150, 200, 230));
         if (cd != null) label(cv, cd, 225, 320, 11, Color.rgb(230, 236, 248));
         return bmp;
     }
@@ -165,24 +161,6 @@ final class Globe {
     }
 
     /** Text centred on (x, baseline y) with a dark outline so it reads over any part of the globe. */
-    /** Rough name of the place on the other side of the Earth (oceans and continents, no network needed). */
-    static String where(double lat, double lon) {
-        if (lat < -60) return "ANTARCTICA";
-        if (lat > 66) return "ARCTIC OCEAN";
-        if (lat > 12 && lat < 72 && lon > -170 && lon < -55) return "N. AMERICA";
-        if (lat >= -56 && lat <= 12 && lon > -82 && lon < -34) return "S. AMERICA";
-        if (lat > 35 && lat < 72 && lon > -10 && lon < 60) return "EUROPE";
-        if (lat > -35 && lat < 37 && lon > -18 && lon < 52) return "AFRICA";
-        if (lat > 5 && lat < 78 && lon >= 52 && lon < 180) return "ASIA";
-        if (lat > -45 && lat < -10 && lon > 112 && lon < 154) return "AUSTRALIA";
-        if (lat > -30 && lat < 30 && lon >= 20 && lon < 100) return "INDIAN OCEAN";
-        if (lat <= -30 && lon >= -20 && lon < 147) return "S. INDIAN OCEAN";
-        if (lat > 0 && lon >= -80 && lon < 0) return "N. ATLANTIC";
-        if (lat <= 0 && lon >= -40 && lon < 20) return "S. ATLANTIC";
-        if (lat > 0) return "N. PACIFIC";
-        return "S. PACIFIC";
-    }
-
     private static void label(Canvas cv, String s, float x, float y, float size, int color) {
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         p.setTypeface(font());

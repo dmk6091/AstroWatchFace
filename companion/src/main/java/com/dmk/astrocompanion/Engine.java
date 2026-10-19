@@ -203,6 +203,13 @@ final class Engine {
             String tr = v.get("btrend");
             if (tr != null) al.append(" (").append(tr).append(')');
         }
+        double kp = Store.d(p, "kp", Double.NaN);
+        if (!Double.isNaN(kp)) {
+            long k = Math.round(kp);
+            al.append(" · Kp ").append(k);
+            if (k >= 5) al.append(" G").append(k - 4).append(" STORM");
+            else if (k == 4) al.append(" active");
+        }
         v.put("arcl", al.toString());
         if (loc) {
             double saz = Astro.sunAzimuth(now, lat, lon);
