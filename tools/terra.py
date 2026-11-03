@@ -502,7 +502,7 @@ SAMPLES.update({DOW: 'SAT', '[DAY]': '17', MON: 'OCT', ILLUM: '35', TEMP: '24', 
 parts = []
 parts.append(T(225, 48, '%s  %s %s', [DOW, '[DAY]', MON], size=22, color=ICE, font='barlow_semibold', width=220,
                launch='CALENDAR'))
-parts.append(T(225, 24, '%s%s', ['[BATTERY_PERCENT]', '"%"'], size=14, color=GREEN, width=60, launch='BATTERY_STATUS'))
+parts.append(T(225, 29, '%s%s', ['[BATTERY_PERCENT]', '"%"'], size=14, color=GREEN, width=60, launch='BATTERY_STATUS'))
 
 # weather icon (bitmap font by condition), temperature, rain chance
 isz = 44
@@ -576,11 +576,11 @@ D(380, 279, 'mset', 5, '%s', 15, '#C9B3FF', 'START', 44, sample='23:48', empty='
 D(334, 301, 'alt', 5, '%s m', 21, WHITE, 'START', 90, sample='560')
 D(334, 325, 'dlen', 7, '%s', 19, WHITE, 'START', 90, sample='11h 41m', empty='--h --m')
 TP, QP, RP = PANEL['tide'], PANEL['quake'], PANEL['rain']
-D(108, 390, 'tplace', 10, '%s', 16, ICE, 'START', 110, sample='MUMBAI', empty='TIDE', to=TP)
-D(250, 390, 'tnow', 5, '%s m', 17, WHITE, 'CENTER', 70, sample='1.8', to=TP)
-D(338, 390, 'tstate', 7, '%s', 14, '#5BA8F2', 'END', 70, sample='RISING', empty='', to=TP)
-D(172, 407, 'hit', 5, 'HIGH %s', 15, SOFT, 'CENTER', 100, sample='14:32', empty='--:--', to=TP)
-D(282, 407, 'lot', 5, 'LOW %s', 15, SOFT, 'CENTER', 100, sample='21:48', empty='--:--', to=TP)
+D(118, 387, 'tplace', 10, '%s', 16, ICE, 'START', 110, sample='MUMBAI', empty='TIDE', to=TP)
+D(250, 387, 'tnow', 5, '%s m', 17, WHITE, 'CENTER', 70, sample='1.8', to=TP)
+D(328, 387, 'tstate', 7, '%s', 14, '#5BA8F2', 'END', 70, sample='RISING', empty='', to=TP)
+D(182, 402, 'hit', 5, 'HIGH %s', 15, SOFT, 'CENTER', 100, sample='14:32', empty='--:--', to=TP)
+D(268, 402, 'lot', 5, 'LOW %s', 15, SOFT, 'CENTER', 100, sample='21:48', empty='--:--', to=TP)
 D(225, 298, 'iss', 10, 'ISS %s', 15, ICE, 'CENTER', 130, sample='19:42 58°', empty='--')
 D(225, 320, 'dsky', 24, '%s', 15, '#C9B3FF', 'CENTER', 190, sample='M31 ANDROMEDA 23:15', empty='')
 D(225, 107, 'alert', 26, '%s', 16, '#FF7FB8', 'CENTER', 250, sample='CYCLONE SIMON · 820 km', empty='')
