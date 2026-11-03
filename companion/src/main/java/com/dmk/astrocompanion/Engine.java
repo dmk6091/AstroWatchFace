@@ -236,7 +236,15 @@ final class Engine {
         } catch (Throwable t) {
             Log.w(TAG, "alerts: " + t);
         }
-        if (loc) v.put("dsky", Astro.deepSky(now, lat, lon));
+        if (screen == Panel.SKY) {
+            // the ISS pass, the sun countdown and tonight's deep-sky target live on their own screen
+            String iss = v.get("iss"), sun = Globe.countdown(ctx, now, loc ? lat : FALLBACK_LAT, loc ? lon : FALLBACK_LON);
+            String dsky = loc ? Astro.deepSky(now, lat, lon) : "";
+            v.put("xh", iss == null || iss.isEmpty() ? "ISS: NO PASS SOON" : "ISS " + iss);
+            v.put("xl", "");
+            v.put("xa", sun == null ? "" : sun);
+            v.put("xb", dsky == null || dsky.isEmpty() ? "NO DEEP-SKY TARGET UP" : dsky);
+        }
 
         // tide
         Tide.Series s = Tide.Series.load(p);

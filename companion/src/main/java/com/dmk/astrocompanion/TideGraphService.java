@@ -74,6 +74,7 @@ public class TideGraphService extends ComplicationDataSourceService {
                         : panel == Panel.RAIN ? Rain.graph(p, now)
                         : panel == Panel.ALERTS ? Alerts.graph(p, now, Store.d(p, "lat", Engine.FALLBACK_LAT),
                                 Store.d(p, "lon", Engine.FALLBACK_LON))
+                        : panel == Panel.SKY ? android.graphics.Bitmap.createBitmap(428, 64, android.graphics.Bitmap.Config.ARGB_8888)
                         : panel >= Panel.WIND ? Topics.graph(p, now, panel)
                         : Tide.graph(Tide.Series.load(p), now);
                 data = image(request.getComplicationType(), Icon.createWithBitmap(b), "Bottom panel", Panel.tap(this));

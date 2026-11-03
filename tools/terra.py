@@ -371,6 +371,20 @@ def warn():
     return im
 
 
+def star():
+    im = canvas()
+    dd = ImageDraw.Draw(im)
+    c = hexrgb('#C9B3FF')
+    pts = []
+    for i in range(8):
+        a = math.pi * i / 4 - math.pi / 2
+        r = 80 if i % 2 == 0 else 22
+        pts.append((100 + r * math.cos(a), 100 + r * math.sin(a)))
+    dd.polygon(pts, fill=c)
+    dd.ellipse((150, 140, 170, 160), fill=c)
+    return im
+
+
 def haze():
     im = canvas()
     dd = ImageDraw.Draw(im)
@@ -381,11 +395,11 @@ def haze():
 
 
 for name, im in (('ic_wave', wave()), ('ic_quake', seismo()), ('ic_rain', umbrella()), ('ic_wind', windy()),
-                 ('ic_press', gauge()), ('ic_sea', swell()), ('ic_air', haze()), ('ic_alert', warn())):
+                 ('ic_press', gauge()), ('ic_sea', swell()), ('ic_air', haze()), ('ic_alert', warn()), ('ic_sky', star())):
     im.resize((44, 44), Image.LANCZOS).save(os.path.join(RES, 'drawable-nodpi', name + '.png'))
 
 
-NPAN = 8
+NPAN = 9
 DOTW = 8 * NPAN      # width of the dots strip in face units
 
 
@@ -561,7 +575,7 @@ def D(x, y, name, width, template, size, color, align='CENTER', w=None, font='ba
 
 
 # bottom panel: three screens (tide / quakes / rain), the companion picks one, a tap goes to the next
-PANEL = {'tide': [], 'quake': [], 'rain': [], 'wind': [], 'press': [], 'sea': [], 'air': [], 'alert': []}
+PANEL = {'tide': [], 'quake': [], 'rain': [], 'wind': [], 'press': [], 'sea': [], 'air': [], 'alert': [], 'sky': []}
 QRED = '#FF5440'
 
 
@@ -581,10 +595,7 @@ D(250, 387, 'tnow', 5, '%s m', 17, WHITE, 'CENTER', 70, sample='1.8', to=TP)
 D(328, 387, 'tstate', 7, '%s', 14, '#5BA8F2', 'END', 70, sample='RISING', empty='', to=TP)
 D(182, 402, 'hit', 5, 'HIGH %s', 15, SOFT, 'CENTER', 100, sample='14:32', empty='--:--', to=TP)
 D(268, 402, 'lot', 5, 'LOW %s', 15, SOFT, 'CENTER', 100, sample='21:48', empty='--:--', to=TP)
-D(225, 298, 'iss', 10, 'ISS %s', 15, ICE, 'CENTER', 130, sample='19:42 58°', empty='--')
-D(225, 320, 'dsky', 24, '%s', 15, '#C9B3FF', 'CENTER', 190, sample='M31 ANDROMEDA 23:15', empty='')
 D(225, 107, 'alert', 26, '%s', 16, '#FF7FB8', 'CENTER', 250, sample='CYCLONE SIMON · 820 km', empty='')
-D(222, 153, 'qface', 20, '%s', 15, '#FF8A6B', 'CENTER', 150, sample='M5.1 ANDAMAN 7H', empty='')
 D(144, 246, 'feels', 6, 'FEELS %s', 13, SOFT, 'START', 70, sample='27°', empty='')
 # quakes: strongest of the last 24 h, how long ago, how many, nearest to you
 D(110, 390, 'qmag', 5, '%s', 17, QRED, 'START', 44, to=QP)
@@ -603,7 +614,7 @@ D(108, 390, 'xh', 17, '%s', 17, WHITE, 'START', 176, to=XP)
 D(340, 390, 'xl', 11, '%s', 14, SOFT, 'END', 90, to=XP)
 D(172, 407, 'xa', 16, '%s', 15, SOFT, 'CENTER', 112, to=XP)
 D(282, 407, 'xb', 16, '%s', 15, SOFT, 'CENTER', 112, to=XP)
-for k_ in ('press', 'sea', 'air', 'alert'):
+for k_ in ('press', 'sea', 'air', 'alert', 'sky'):
     PANEL[k_].extend(XP)
 # text along the bezel in the empty strips at 9 and 3 o'clock (reads upward on the left, downward on
 # the right, letters' tops toward the edge). Angles: 0 = 12 o'clock, clockwise.
@@ -643,7 +654,7 @@ def ptxt(x, y, s, size, color, align):
 SCREENS = (('tide', 'ic_wave', None), ('quake', 'ic_quake', ('-24h', 'NOW')), ('rain', 'ic_rain', ('NOW', '+2h')),
            ('wind', 'ic_wind', ('-6h', '+18h')), ('press', 'ic_press', ('-6h', '+18h')),
            ('sea', 'ic_sea', ('-6h', '+18h')), ('air', 'ic_air', ('-6h', '+18h')),
-           ('alert', 'ic_alert', ('-8h', 'NOW')))
+           ('alert', 'ic_alert', ('-8h', 'NOW')), ('sky', 'ic_sky', None))
 for i, (name, ic, ends) in enumerate(SCREENS):
     PANEL[name].insert(0, pimg(ic, 92 - 11, 390 - 11, 22, 22) + pimg('dots_%d' % i, 225 - DOTW / 2, 336, DOTW, 10))
     if ends:

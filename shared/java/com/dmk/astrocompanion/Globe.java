@@ -203,8 +203,6 @@ final class Globe {
         me.setColor(Color.rgb(255, 140, 60));
         float[] mm = project(meLat, meLon, lat0, lon0, cx, cy, r);
         if (mm != null) cv.drawCircle(mm[0], mm[1], 5, me);
-        String cd = countdown(ctx, now, meLat, meLon);
-        if (cd != null) label(cv, cd, 225, 274, 11, Color.rgb(230, 236, 248));
         return bmp;
     }
 
@@ -396,7 +394,7 @@ final class Globe {
     }
 
     /** "NIGHT · SUNRISE IN 9 h 33 m" or "DAY · SUNSET IN 2 h 10 m", from the downloaded sun times. */
-    private static String countdown(Context ctx, long now, double lat0, double lon0) {
+    static String countdown(Context ctx, long now, double lat0, double lon0) {
         try {
             android.content.SharedPreferences p = Store.p(ctx);
             boolean day = Astro.sunAltitude(now, lat0, lon0) > -0.833;
