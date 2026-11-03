@@ -204,7 +204,7 @@ final class Globe {
         float[] mm = project(meLat, meLon, lat0, lon0, cx, cy, r);
         if (mm != null) cv.drawCircle(mm[0], mm[1], 5, me);
         String cd = countdown(ctx, now, meLat, meLon);
-        if (cd != null) label(cv, cd, 225, 320, 11, Color.rgb(230, 236, 248));
+        if (cd != null) label(cv, cd, 225, 274, 11, Color.rgb(230, 236, 248));
         return bmp;
     }
 
@@ -308,6 +308,8 @@ final class Globe {
             if (world) {
                 if (Math.hypot(q[0] - 225, q[1] - 225) > 196) continue;
             } else if (q[0] < 40 || q[0] > 410 || q[1] < 40 || q[1] > 410) continue;
+            // keep clear of the face's own text: the alert / quake lines above and the ISS / sky / AQI lines below
+            if ((q[0] > 90 && q[0] < 360 && q[1] > 92 && q[1] < 168) || (q[0] > 80 && q[0] < 370 && q[1] > 270 && q[1] < 352)) continue;
             f.setTimeZone(java.util.TimeZone.getTimeZone((String) c[3]));
             boolean below = !world && (Boolean) c[4];
             String text = c[0] + " " + f.format(new java.util.Date(now));
