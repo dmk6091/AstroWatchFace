@@ -311,12 +311,11 @@ d.polygon([P(326, 274), P(321, 283), P(331, 283)], fill=hexrgb('#C9B3FF'))      
 d.polygon([P(372, 283), P(367, 275), P(377, 275)], fill=hexrgb('#C9B3FF'))      # moonset: down
 icon(sun_half(GOLD), 128, 82, 22)
 icon(sun_half('#F28B3D'), 280, 82, 22)
-icon(umbrella(), 52, 275, 22)
-icon(drop(), 52, 305, 20)
-icon(leaf(), 52, 335, 20)
+icon(umbrella(), 52, 268, 22)
+icon(drop(), 52, 295, 20)
+icon(leaf(), 52, 322, 20)
 icon(mountain(), 318, 301, 24)
 icon(hourglass(), 318, 325, 20)
-label('AQI', 72, 335, 12, GREEN, anchor='lm')
 
 
 # bottom panel icons (one per screen) and its page dots
@@ -520,7 +519,7 @@ def wx_text(fam):
 
 parts.append(wx_icon % (92 - isz / 2, 196 - isz / 2, isz, isz, wx_text('wx_day'), wx_text('wx_night')))
 parts.append(T(95, 238, '%s°', [TEMP], size=36, color=WHITE, font='barlow_medium', width=100))
-parts.append(T(70, 275, '%s%s', [RAIN, '"%"'], size=21, color=WHITE, align='START', width=80))
+parts.append(T(70, 268, '%s%s', [RAIN, '"%"'], size=21, color=WHITE, align='START', width=80))
 
 # moon: picture by phase position (decimal), % lit
 msz = 50
@@ -569,8 +568,8 @@ QRED = '#FF5440'
 
 D(142, 82, 'srise', 5, '%s', 19, WHITE, 'START', 70, sample='06:18', empty='--:--')
 D(294, 82, 'sset', 5, '%s', 19, WHITE, 'START', 70, sample='18:24', empty='--:--')
-D(70, 305, 'hum', 4, '%s', 21, WHITE, 'START', 80, sample='72%')
-D(98, 335, 'aqi', 4, '%s', 21, WHITE, 'START', 60, sample='54')
+D(70, 295, 'hum', 4, '%s', 21, WHITE, 'START', 80, sample='72%')
+D(72, 322, 'aqi', 13, '%s', 17, GREEN, 'START', 120, sample='54 GOOD')
 D(358, 258, 'mage', 6, '%s', 16, SOFT, 'CENTER', 90, sample='6.2 d')
 D(334, 279, 'mrise', 5, '%s', 15, '#C9B3FF', 'START', 44, sample='12:05', empty='--:--')
 D(380, 279, 'mset', 5, '%s', 15, '#C9B3FF', 'START', 44, sample='23:48', empty='--:--')

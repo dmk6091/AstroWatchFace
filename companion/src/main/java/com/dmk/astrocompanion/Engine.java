@@ -136,7 +136,7 @@ final class Engine {
         double hum = Store.d(p, "hum", Double.NaN);
         if (!Double.isNaN(hum)) v.put("hum", Math.round(hum) + "%");
         double aqi = Store.d(p, "aqi", Double.NaN);
-        if (!Double.isNaN(aqi)) v.put("aqi", String.valueOf(Math.round(aqi)));
+        if (!Double.isNaN(aqi)) v.put("aqi", Math.round(aqi) + " " + Topics.aqiWord(aqi));
         v.put("mage", String.format(Locale.US, "%.1f d", Astro.moonAge(now)));
 
         // pressure, elevation (today's max / min / climb), trend over ~3 h

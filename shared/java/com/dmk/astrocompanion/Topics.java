@@ -118,7 +118,7 @@ final class Topics {
                 : h < 6 ? "ROUGH" : h < 9 ? "VERY ROUGH" : "HIGH SEAS";
     }
 
-    private static String aqiWord(double a) {
+    static String aqiWord(double a) {
         return a <= 50 ? "GOOD" : a <= 100 ? "MODERATE" : a <= 150 ? "SENSITIVE" : a <= 200 ? "UNHEALTHY"
                 : a <= 300 ? "VERY POOR" : "HAZARDOUS";
     }
