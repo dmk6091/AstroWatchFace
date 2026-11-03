@@ -72,7 +72,7 @@ final class Alerts {
     // ------------------------------------------------------------ downloads
 
     /** Fetches both feeds and keeps what applies to you. Returns a status word. */
-    static String refresh(SharedPreferences.Editor e, double lat, double lon, long now) {
+    static String refresh(SharedPreferences p, SharedPreferences.Editor e, double lat, double lon, long now) {
         List<A> all = new ArrayList<>();
         String st = "";
         try {
@@ -97,10 +97,54 @@ final class Alerts {
             if (b.length() > 0) b.append(';');
             b.append(a.record());
         }
+        if (st.contains("gdacs ok")) trackHistory(p, e, all, now);
         // keep the old list when both feeds failed
         if (st.contains("gdacs ok") || st.contains("sachet ok")) e.putString(KEY, b.toString());
         e.putLong("aTime", now);
         return "alerts (" + all.size() + "): " + st;
+    }
+
+    /** Cyclone positions kept at every refresh (3 h apart, 6 days) so the globe can draw where each has been. */
+    private static void trackHistory(SharedPreferences p, SharedPreferences.Editor e, List<A> now_, long now) {
+        java.util.Map<String, List<double[]>> h = history(p, now);
+        for (A a : now_) {
+            if (!"TC".equals(a.kind)) continue;
+            List<double[]> tr = h.get(a.label);
+            if (tr == null) {
+                tr = new ArrayList<>();
+                h.put(a.label, tr);
+            }
+            if (tr.isEmpty() || now - (long) tr.get(tr.size() - 1)[2] >= 3 * H) tr.add(new double[]{a.lat, a.lon, now});
+        }
+        StringBuilder b = new StringBuilder();
+        for (java.util.Map.Entry<String, List<double[]>> en : h.entrySet()) {
+            for (double[] pt : en.getValue()) {
+                if (b.length() > 0) b.append(';');
+                b.append(clean(en.getKey())).append('|').append(String.format(Locale.US, "%.2f|%.2f|%d", pt[0], pt[1], (long) pt[2]));
+            }
+        }
+        e.putString("tcHist", b.toString());
+    }
+
+    /** Kept cyclone positions by name, oldest first: {lat, lon, time}. */
+    static java.util.Map<String, List<double[]>> history(SharedPreferences p, long now) {
+        java.util.Map<String, List<double[]>> out = new java.util.LinkedHashMap<>();
+        for (String s : p.getString("tcHist", "").split(";")) {
+            String[] a = s.split("\\|");
+            if (a.length < 4) continue;
+            try {
+                long t = Long.parseLong(a[3]);
+                if (now - t > 6 * 24 * H) continue;
+                List<double[]> l = out.get(a[0]);
+                if (l == null) {
+                    l = new ArrayList<>();
+                    out.put(a[0], l);
+                }
+                l.add(new double[]{Double.parseDouble(a[1]), Double.parseDouble(a[2]), t});
+            } catch (Exception ignored) {
+            }
+        }
+        return out;
     }
 
     /** GDACS event list (GeoJSON) -> cyclones / floods that matter to you. */

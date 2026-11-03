@@ -149,9 +149,42 @@ final class Fetch {
             Log.w(TAG, "waves: " + t);
             st.append(", waves failed");
         }
+        try {
+            // wind across the region for the globe's arrows: a 10-degree grid, one request
+            double la0 = Math.round(lat / 10.0) * 10.0, lo0 = Math.round(lon / 10.0) * 10.0;
+            StringBuilder las = new StringBuilder(), los = new StringBuilder();
+            for (int i = -2; i <= 2; i++) {
+                for (int k = -3; k <= 3; k++) {
+                    double la = la0 + i * 10, lo = lo0 + k * 10;
+                    if (la > 80 || la < -80) continue;
+                    if (las.length() > 0) {
+                        las.append(',');
+                        los.append(',');
+                    }
+                    las.append(String.format(Locale.US, "%.1f", la));
+                    los.append(String.format(Locale.US, "%.1f", ((lo + 540) % 360 + 360) % 360 - 180));
+                }
+            }
+            JSONArray arr = new JSONArray(Net.get("https://api.open-meteo.com/v1/forecast?latitude=" + las + "&longitude=" + los
+                    + "&current=wind_speed_10m,wind_direction_10m&timezone=UTC"));
+            String[] la = las.toString().split(","), lo = los.toString().split(",");
+            StringBuilder g = new StringBuilder();
+            for (int i = 0; i < arr.length() && i < la.length; i++) {
+                JSONObject c = arr.getJSONObject(i).optJSONObject("current");
+                if (c == null || c.isNull("wind_speed_10m") || c.isNull("wind_direction_10m")) continue;
+                if (g.length() > 0) g.append(';');
+                g.append(la[i]).append(',').append(lo[i]).append(',')
+                        .append(String.format(Locale.US, "%.0f", c.getDouble("wind_speed_10m"))).append(',')
+                        .append(String.format(Locale.US, "%.0f", c.getDouble("wind_direction_10m")));
+            }
+            e.putString("wGrid", g.toString());
+        } catch (Throwable t) {
+            Log.w(TAG, "wind grid: " + t);
+            st.append(", wind grid failed");
+        }
         st.append(", ").append(Iss.refresh(p, e));
         st.append(", ").append(Quakes.refresh(e));
-        st.append(", ").append(Alerts.refresh(e, lat, lon, now));
+        st.append(", ").append(Alerts.refresh(p, e, lat, lon, now));
         try {
             JSONArray kp = new JSONArray(Net.get("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"));
             double k = Double.NaN;

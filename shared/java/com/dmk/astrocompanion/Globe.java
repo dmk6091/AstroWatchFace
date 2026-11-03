@@ -27,7 +27,9 @@ final class Globe {
     static volatile boolean showQuakes = true;
     /** Cyclones and floods are drawn only while the panel is on the alerts screen. */
     static volatile boolean showAlerts = false;
-    private static boolean sCacheAlerts = false;
+    /** Wind arrows, only while the panel is on the wind screen. */
+    static volatile boolean showWind = false;
+    private static boolean sCacheAlerts = false, sCacheWind = false;
     private static long sCacheAt;
 
     private Globe() {}
@@ -74,13 +76,14 @@ final class Globe {
     static synchronized Bitmap render(Context ctx, double lat0, double lon0, long now, double sunFrac, Iss.Orbit iss,
                                       double meLat, double meLon, boolean world) {
         String key = lat0 + "," + lon0 + "," + world;
-        if (sCache != null && now - sCacheAt < 2 * 60_000L && sCacheQuakes == showQuakes && sCacheAlerts == showAlerts && key.equals(sCacheKey))
+        if (sCache != null && now - sCacheAt < 2 * 60_000L && sCacheQuakes == showQuakes && sCacheAlerts == showAlerts && sCacheWind == showWind && key.equals(sCacheKey))
             return sCache;
         // The globe fills the whole round face; the day side is dimmed so the text on top reads well.
         sCache = draw(ctx, 450, 0.55, lat0, lon0, now, iss, meLat, meLon, world);
         sCacheAt = now;
         sCacheQuakes = showQuakes;
         sCacheAlerts = showAlerts;
+        sCacheWind = showWind;
         sCacheKey = key;
         return sCache;
     }
@@ -135,6 +138,27 @@ final class Globe {
                 double limb = 0.7 + 0.3 * Math.sqrt(Math.max(0, 1 - rr));
                 double dr = Color.red(dc), dg = Color.green(dc), db = Color.blue(dc);
                 double nr = dr * 0.07 + li * 0.9, ng = dg * 0.07 + li * 0.75, nb = db * 0.09 + li * 0.4;
+                if (cz < 0.08 && cz > -0.32) {
+                    // twilight bands on the night side: civil (0 to 6 below the horizon, warm), nautical (6 to 12,
+                    // blue), astronomical (12 to 18, faint)
+                    double h = Math.toDegrees(Math.asin(Math.max(-1, Math.min(1, cz))));
+                    double wgt = Math.max(0, Math.min(1, (0 - h + 4.6) / 4.6)) * (1 - dayf);
+                    if (h <= 0 && h > -6) {
+                        nr += 62 * wgt * (1 + h / 12);
+                        ng += 36 * wgt * (1 + h / 12);
+                        nb += 22 * wgt * (1 + h / 12);
+                    } else if (h <= -6 && h > -12) {
+                        double f = 1 - (-h - 6) / 6 * 0.4;
+                        nr += 14 * f;
+                        ng += 22 * f;
+                        nb += 58 * f;
+                    } else if (h <= -12 && h > -18) {
+                        double f = 1 - (-h - 12) / 6;
+                        nr += 5 * f;
+                        ng += 8 * f;
+                        nb += 24 * f;
+                    }
+                }
                 double k = dim * dayf + (1 - dayf);
                 int cr = (int) Math.min(255, (dr * shade * dayf + nr * (1 - dayf)) * limb * k);
                 int cg = (int) Math.min(255, (dg * shade * dayf + ng * (1 - dayf)) * limb * k);
@@ -162,7 +186,11 @@ final class Globe {
         drawLines(cv, lat0, lon0);
         if (iss != null) drawIssPath(cv, iss, now, lat0, lon0);
         if (showQuakes) drawQuakes(cv, ctx, now, lat0, lon0, cx, cy, r);
-        if (showAlerts) drawAlerts(cv, ctx, now, lat0, lon0, cx, cy, r);
+        if (showAlerts) {
+            drawAurora(cv, ctx, lat0, lon0);
+            drawAlerts(cv, ctx, now, lat0, lon0, cx, cy, r);
+        }
+        if (showWind) drawWind(cv, ctx, lat0, lon0);
         double[] ml = Astro.sublunar(now);
         float[] mp = project(ml[0], ml[1], lat0, lon0, cx, cy, r);
         if (mp != null) drawMoon(cv, mp[0], mp[1], 11, Astro.moonAge(now));
@@ -444,6 +472,115 @@ final class Globe {
             if (p == null) continue;
             cv.drawCircle(p[0], p[1], 15, ring);
             cv.drawText(a.label, Math.max(40, Math.min(410, p[0])), Math.min(436, p[1] + 30), t);
+        }
+        // where each cyclone has been: dots along the positions kept at every refresh (3 h apart)
+        Paint dot = new Paint(Paint.ANTI_ALIAS_FLAG);
+        dot.setColor(Color.argb(200, 255, 150, 200));
+        Paint line = new Paint(Paint.ANTI_ALIAS_FLAG);
+        line.setStyle(Paint.Style.STROKE);
+        line.setStrokeWidth(1.6f);
+        line.setColor(Color.argb(150, 255, 150, 200));
+        for (java.util.List<double[]> tr : Alerts.history(sp, now).values()) {
+            float[] prev = null;
+            for (double[] pt : tr) {
+                float[] q = project(pt[0], pt[1], lat0, lon0, cx, cy, r);
+                if (q != null) {
+                    if (prev != null) cv.drawLine(prev[0], prev[1], q[0], q[1], line);
+                    cv.drawCircle(q[0], q[1], 2.4f, dot);
+                }
+                prev = q;
+            }
+        }
+    }
+
+    /** Geomagnetic poles (dipole, ~2025): the aurora ovals are rings around them. */
+    private static final double[][] MAG_POLES = {{80.7, -72.7}, {-80.7, 107.3}};
+
+    /** The point `dist` degrees from (lat, lon) along `bearing` degrees. */
+    private static double[] destination(double lat, double lon, double bearing, double dist) {
+        double p1 = lat * RAD, l1 = lon * RAD, b = bearing * RAD, d = dist * RAD;
+        double p2 = Math.asin(Math.sin(p1) * Math.cos(d) + Math.cos(p1) * Math.sin(d) * Math.cos(b));
+        double l2 = l1 + Math.atan2(Math.sin(b) * Math.sin(d) * Math.cos(p1), Math.cos(d) - Math.sin(p1) * Math.sin(p2));
+        return new double[]{p2 / RAD, l2 / RAD};
+    }
+
+    /** Aurora ovals, estimated from the Kp index: the oval's low edge sits near 66 - 2 x Kp degrees of magnetic latitude. */
+    private static void drawAurora(Canvas cv, Context ctx, double lat0, double lon0) {
+        double kp = Store.d(Store.p(ctx), "kp", Double.NaN);
+        if (Double.isNaN(kp)) return;
+        double edge = 66 - 2.0 * kp;
+        int alpha = (int) (110 + 12 * Math.min(6, kp));
+        Paint band = new Paint(Paint.ANTI_ALIAS_FLAG);
+        band.setStyle(Paint.Style.STROKE);
+        band.setStrokeCap(Paint.Cap.ROUND);
+        Paint txt = new Paint(Paint.ANTI_ALIAS_FLAG);
+        txt.setTextSize(12);
+        txt.setFakeBoldText(true);
+        txt.setTextAlign(Paint.Align.CENTER);
+        txt.setColor(Color.rgb(130, 255, 190));
+        txt.setShadowLayer(3, 0, 0, Color.BLACK);
+        float labelX = -1, labelY = 1e9f;
+        for (double[] pole : MAG_POLES) {
+            float[] prev = null;
+            for (int b = 0; b <= 360; b += 6) {
+                double[] pt = destination(pole[0], pole[1], b, 90 - (edge + 3));
+                float[] q = project(pt[0], pt[1], lat0, lon0, 225, 225, 225);
+                if (q != null && prev != null) {
+                    band.setStrokeWidth(7f);
+                    band.setColor(Color.argb(alpha / 3, 90, 255, 170));
+                    cv.drawLine(prev[0], prev[1], q[0], q[1], band);
+                    band.setStrokeWidth(2f);
+                    band.setColor(Color.argb(alpha, 120, 255, 190));
+                    cv.drawLine(prev[0], prev[1], q[0], q[1], band);
+                }
+                if (q != null && q[1] < labelY && q[0] > 70 && q[0] < 380 && q[1] > 60) {
+                    labelX = q[0];
+                    labelY = q[1];
+                }
+                prev = q;
+            }
+        }
+        if (labelX > 0) cv.drawText("AURORA", labelX, labelY + 15, txt);
+    }
+
+    /** Wind across the region (a coarse grid kept by the refresh): an arrow per point, longer = stronger. */
+    private static void drawWind(Canvas cv, Context ctx, double lat0, double lon0) {
+        String g = Store.p(ctx).getString("wGrid", "");
+        if (g.isEmpty()) return;
+        Paint line = new Paint(Paint.ANTI_ALIAS_FLAG);
+        line.setStyle(Paint.Style.STROKE);
+        line.setStrokeCap(Paint.Cap.ROUND);
+        line.setStrokeWidth(2.2f);
+        Paint shadow = new Paint(line);
+        shadow.setStrokeWidth(4.2f);
+        shadow.setColor(Color.argb(150, 0, 0, 0));
+        line.setColor(Color.rgb(94, 224, 200));
+        for (String s : g.split(";")) {
+            String[] a = s.split(",");
+            if (a.length < 4) continue;
+            try {
+                double la = Double.parseDouble(a[0]), lo = Double.parseDouble(a[1]);
+                double sp = Double.parseDouble(a[2]), from = Double.parseDouble(a[3]);
+                float[] p = project(la, lo, lat0, lon0, 225, 225, 225);
+                double[] nx = destination(la, lo, from + 180, 2.0);
+                float[] q = project(nx[0], nx[1], lat0, lon0, 225, 225, 225);
+                if (p == null || q == null) continue;
+                float vx = q[0] - p[0], vy = q[1] - p[1];
+                float n = (float) Math.hypot(vx, vy);
+                if (n < 0.5f) continue;
+                vx /= n;
+                vy /= n;
+                float len = (float) (9 + Math.min(14, sp / 3.0));
+                float x0 = p[0] - vx * len / 2, y0 = p[1] - vy * len / 2, x1 = p[0] + vx * len / 2, y1 = p[1] + vy * len / 2;
+                float hx = 5, hl = 5;
+                float[][] head = {{x1 - vx * hl - vy * hx, y1 - vy * hl + vx * hx}, {x1 - vx * hl + vy * hx, y1 - vy * hl - vx * hx}};
+                for (Paint pt : new Paint[]{shadow, line}) {
+                    cv.drawLine(x0, y0, x1, y1, pt);
+                    cv.drawLine(x1, y1, head[0][0], head[0][1], pt);
+                    cv.drawLine(x1, y1, head[1][0], head[1][1], pt);
+                }
+            } catch (Exception ignored) {
+            }
         }
     }
 
