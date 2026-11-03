@@ -224,11 +224,19 @@ final class Engine {
         v.put("panel", String.valueOf(Panel.checkAuto(ctx, p, now)));
         Quakes.values(p, v, now, loc ? lat : FALLBACK_LAT, loc ? lon : FALLBACK_LON);
         Rain.values(p, v, now);
+        int screen = 0;
         try {
-            Topics.values(p, v, now, Integer.parseInt(v.get("panel")));
+            screen = Integer.parseInt(v.get("panel"));
+            Topics.values(p, v, now, screen);
         } catch (Throwable t) {
             Log.w(TAG, "topics: " + t);
         }
+        try {
+            Alerts.values(p, v, now, loc ? lat : FALLBACK_LAT, loc ? lon : FALLBACK_LON, screen == Panel.ALERTS);
+        } catch (Throwable t) {
+            Log.w(TAG, "alerts: " + t);
+        }
+        if (loc) v.put("dsky", Astro.deepSky(now, lat, lon));
 
         // tide
         Tide.Series s = Tide.Series.load(p);

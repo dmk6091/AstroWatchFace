@@ -120,6 +120,7 @@ final class Quakes {
             v.put("qago", "");
             v.put("qcnt", "");
             v.put("qnear", "");
+            v.put("qface", "");
             return;
         }
         Q big = qs.get(0), near = qs.get(0);
@@ -130,6 +131,9 @@ final class Quakes {
         v.put("qmag", String.format(Locale.US, "M%.1f", big.mag));
         v.put("qplace", shortPlace(big.place, 16));
         v.put("qago", ago(now - big.time));
+        long mins = Math.max(0, (now - big.time) / 60_000);
+        v.put("qface", String.format(Locale.US, "M%.1f %s %s", big.mag, shortPlace(big.place, 12),
+                mins < 60 ? mins + "M" : (mins / 60) + "H"));
         v.put("qcnt", qs.size() + " IN 24 H");
         long d = Math.round(km(near.lat, near.lon, lat0, lon0) / 10.0) * 10;
         v.put("qnear", String.format(Locale.US, "NEAR %,d km", d));

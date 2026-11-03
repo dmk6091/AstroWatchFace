@@ -35,6 +35,7 @@ public class GlobeService extends ComplicationDataSourceService {
                     long now = System.currentTimeMillis();
                     double lat = Store.d(p, "lat", Engine.FALLBACK_LAT), lon = Store.d(p, "lon", Engine.FALLBACK_LON);
                     Globe.showQuakes = Panel.current(p, now) == Panel.QUAKES;
+                    Globe.showAlerts = Panel.current(p, now) == Panel.ALERTS;
                     int turn = Panel.spinSteps(p, now);
                     double lon0 = ((lon + 60.0 * turn + 540) % 360 + 360) % 360 - 180;
                     data = TideGraphService.image(type, TideGraphService.jpeg(

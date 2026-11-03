@@ -850,7 +850,7 @@ public class MainActivity extends Activity {
         ui.label(c, "Bottom panel on the face");
         ui.gap(c, 10);
         LinearLayout seg = ui.row(c);
-        String[] ps = {"Tide", "Quake", "Rain", "Wind", "Press", "Sea", "Air"};
+        String[] ps = {"Tide", "Quake", "Rain", "Wind", "Press", "Sea", "Air", "Alert"};
         int pn = w == null ? 0 : w.getInt(Link.K_PANEL, 0);
         for (int i = 0; i < ps.length; i++) {
             final int k = i;

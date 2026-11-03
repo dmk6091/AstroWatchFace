@@ -151,6 +151,7 @@ final class Fetch {
         }
         st.append(", ").append(Iss.refresh(p, e));
         st.append(", ").append(Quakes.refresh(e));
+        st.append(", ").append(Alerts.refresh(e, lat, lon, now));
         try {
             JSONArray kp = new JSONArray(Net.get("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"));
             double k = Double.NaN;

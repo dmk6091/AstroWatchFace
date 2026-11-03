@@ -25,6 +25,9 @@ final class Globe {
     private static String sCacheKey = "";
     /** The watch shows quakes on the globe only while its bottom panel is on the quake screen. */
     static volatile boolean showQuakes = true;
+    /** Cyclones and floods are drawn only while the panel is on the alerts screen. */
+    static volatile boolean showAlerts = false;
+    private static boolean sCacheAlerts = false;
     private static long sCacheAt;
 
     private Globe() {}
@@ -71,12 +74,13 @@ final class Globe {
     static synchronized Bitmap render(Context ctx, double lat0, double lon0, long now, double sunFrac, Iss.Orbit iss,
                                       double meLat, double meLon, boolean world) {
         String key = lat0 + "," + lon0 + "," + world;
-        if (sCache != null && now - sCacheAt < 2 * 60_000L && sCacheQuakes == showQuakes && key.equals(sCacheKey))
+        if (sCache != null && now - sCacheAt < 2 * 60_000L && sCacheQuakes == showQuakes && sCacheAlerts == showAlerts && key.equals(sCacheKey))
             return sCache;
         // The globe fills the whole round face; the day side is dimmed so the text on top reads well.
         sCache = draw(ctx, 450, 0.55, lat0, lon0, now, iss, meLat, meLon, world);
         sCacheAt = now;
         sCacheQuakes = showQuakes;
+        sCacheAlerts = showAlerts;
         sCacheKey = key;
         return sCache;
     }
@@ -158,6 +162,7 @@ final class Globe {
         drawLines(cv, lat0, lon0);
         if (iss != null) drawIssPath(cv, iss, now, lat0, lon0);
         if (showQuakes) drawQuakes(cv, ctx, now, lat0, lon0, cx, cy, r);
+        if (showAlerts) drawAlerts(cv, ctx, now, lat0, lon0, cx, cy, r);
         double[] ml = Astro.sublunar(now);
         float[] mp = project(ml[0], ml[1], lat0, lon0, cx, cy, r);
         if (mp != null) drawMoon(cv, mp[0], mp[1], 11, Astro.moonAge(now));
@@ -416,6 +421,29 @@ final class Globe {
             // label below-left, kept on the screen
             float lx = Math.max(24, Math.min(426, p[0] - 12)), ly = Math.min(436, p[1] + 19);
             cv.drawText(String.format(java.util.Locale.US, "M%.1f", big.mag), lx, ly, t);
+        }
+    }
+
+    /** Cyclones and floods (GDACS Orange / Red): a dashed pink ring with the name. */
+    private static void drawAlerts(Canvas cv, Context ctx, long now, double lat0, double lon0, double cx, double cy, double r) {
+        android.content.SharedPreferences sp = Store.p(ctx);
+        Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG);
+        ring.setStyle(Paint.Style.STROKE);
+        ring.setStrokeWidth(2.2f);
+        ring.setColor(Color.rgb(255, 127, 184));
+        ring.setPathEffect(new android.graphics.DashPathEffect(new float[]{6, 5}, 0));
+        Paint t = new Paint(Paint.ANTI_ALIAS_FLAG);
+        t.setTextSize(13);
+        t.setFakeBoldText(true);
+        t.setTextAlign(Paint.Align.CENTER);
+        t.setColor(Color.rgb(255, 170, 205));
+        t.setShadowLayer(3, 0, 0, Color.BLACK);
+        for (Alerts.A a : Alerts.load(sp, now, Store.d(sp, "lat", Where.FALLBACK_LAT), Store.d(sp, "lon", Where.FALLBACK_LON))) {
+            if (!"TC".equals(a.kind) && !"FL".equals(a.kind)) continue;
+            float[] p = project(a.lat, a.lon, lat0, lon0, cx, cy, r);
+            if (p == null) continue;
+            cv.drawCircle(p[0], p[1], 15, ring);
+            cv.drawText(a.label, Math.max(40, Math.min(410, p[0])), Math.min(436, p[1] + 30), t);
         }
     }
 
