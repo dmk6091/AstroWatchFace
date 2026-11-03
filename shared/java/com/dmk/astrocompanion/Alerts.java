@@ -17,7 +17,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,7 +33,7 @@ import java.util.regex.Pattern;
  */
 final class Alerts {
     static final String GDACS = "https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?eventlist=%s"
-            + "&alertlevel=Orange;Red&fromDate=%s&toDate=%s&pageSize=40&pageNumber=1";
+            + "&alertlevel=Orange;Red&pageSize=40&pageNumber=1";
     static final String SACHET = "https://sachet.ndma.gov.in/cap_public_website/rss/rss_india.xml";
     static final String KEY = "alerts";
     private static final long H = 3600_000L;
@@ -72,19 +71,13 @@ final class Alerts {
 
     // ------------------------------------------------------------ downloads
 
-    private static String day(long ms) {
-        SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
-        f.setTimeZone(TimeZone.getTimeZone("UTC"));
-        return f.format(new Date(ms));
-    }
-
     /** Fetches both feeds and keeps what applies to you. Returns a status word. */
     static String refresh(SharedPreferences.Editor e, double lat, double lon, long now) {
         List<A> all = new ArrayList<>();
         String st = "";
         try {
-            for (String type : new String[]{"TC", "FL"}) all.addAll(parseGdacs(type, Net.get(
-                    String.format(Locale.US, GDACS, type, day(now - 10 * 24 * H), day(now + 24 * H))), lat, lon, now));
+            for (String type : new String[]{"TC", "FL"})
+                all.addAll(parseGdacs(type, Net.get(String.format(Locale.US, GDACS, type)), lat, lon, now));
             e.putLong("aGdacs", now);
             st += "gdacs ok";
         } catch (Throwable t) {
